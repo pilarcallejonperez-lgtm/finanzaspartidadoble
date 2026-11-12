@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="index,follow">
+<title>Partida Doble</title>
+<meta name="description" content="Partida Doble · Consultora contable, subvenciones e IA. Contabilidad y fiscalidad para autónomos y pymes, administración por horas, ayudas y subvenciones, y asistentes con IA. En remoto, para toda España.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --verde:#1b4033; --verde-2:#235140; --verde-hondo:#122e25;
+  --crema:#f1e8d2; --crema-2:#f8f3e7; --rosa:#d9a7a5; --rosa-hondo:#b9706d; --oro:#c9a85c;
+  --fondo:#fbf8f1; --superficie:#ffffff; --tinta:#1d2a24; --tinta-2:#55625b; --borde:#1b403321;
+  --f-tit:'Playfair Display',Georgia,'Times New Roman',serif;
+  --f-txt:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  --ancho:1120px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --fondo:#0f201a; --superficie:#163029; --tinta:#ece4cf; --tinta-2:#b5b29f; --borde:#c9a85c26; --rosa-hondo:#e3aeab; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --fondo:#0f201a; --superficie:#163029; --tinta:#ece4cf; --tinta-2:#b5b29f; --borde:#c9a85c26; --rosa-hondo:#e3aeab; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--fondo);color:var(--tinta);font-family:var(--f-txt);font-size:1.075rem;line-height:1.6;margin:0}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--oro);outline-offset:3px}
+.env{max-width:var(--ancho);margin:0 auto;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px))}
+h1,h2,h3{font-family:var(--f-tit);font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
+.eti{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--oro)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-weight:600;font-size:1rem;text-decoration:none;padding:.85rem 1.4rem;border-radius:999px;border:1.5px solid var(--oro);color:var(--crema);transition:background .2s,color .2s}
+.btn.lleno{background:var(--rosa);border-color:var(--rosa);color:var(--verde-hondo)}
+.btn.lleno:hover{background:#e7bcba}
+.btn:hover{background:#c9a85c26}
+
+/* Cabecera */
+.barra{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--verde-hondo);border-bottom:1px solid #c9a85c40}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--verde-hondo);z-index:21}
+.barra .env{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-block:.7rem}
+.marca{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--crema)}
+.marca svg{width:44px;height:44px;flex:none}
+.marca b{font-family:var(--f-tit);font-size:1.25rem;font-weight:600;letter-spacing:.01em}
+.marca small{display:block;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--oro)}
+.menu{display:flex;gap:1.4rem;list-style:none;margin:0;padding:0;font-size:.95rem}
+.menu a{text-decoration:none;color:#e6dcc3}.menu a:hover{color:var(--rosa)}
+.barra .btn{padding:.55rem 1rem;font-size:.9rem}
+@media (max-width:860px){.menu{display:none}}
+@media (max-width:440px){.barra .btn{display:none}}
+
+/* Portada */
+.portada{background:radial-gradient(120% 90% at 80% 10%,var(--verde-2),var(--verde) 45%,var(--verde-hondo));color:var(--crema);overflow:hidden}
+.portada .env{display:grid;grid-template-columns:1.25fr .75fr;gap:3rem;align-items:center;padding-block:clamp(3.5rem,9vw,7rem)}
+.portada h1{font-size:clamp(2.4rem,5.6vw,4.2rem);margin:.9rem 0 1.2rem;color:var(--crema)}
+.portada h1 i{color:var(--rosa);font-weight:600}
+.portada p.sub{font-size:clamp(1.1rem,2vw,1.3rem);max-width:46ch;margin:0;color:#ddd3bb}
+.portada .acciones{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:2rem}
+.vendo{list-style:none;margin:0;padding:0;display:grid;gap:1rem;max-width:52ch}
+.vendo li{position:relative;padding-left:2.1rem;color:#ddd3bb;font-size:clamp(1.02rem,1.7vw,1.15rem);line-height:1.5}
+.vendo li::before{content:"✓";position:absolute;left:0;top:.05rem;width:1.45rem;height:1.45rem;border-radius:50%;background:var(--rosa);color:var(--verde-hondo);font-weight:700;font-size:.85rem;display:grid;place-items:center}
+.vendo b{color:var(--crema);font-weight:600}
+.sello{justify-self:center;width:min(100%,340px);aspect-ratio:1;max-width:100%}
+.sello svg{width:100%;height:auto;display:block;filter:drop-shadow(0 20px 40px #0006)}
+@media (max-width:820px){.portada .env{grid-template-columns:1fr}.sello{width:min(70%,260px);order:-1}}
+
+/* Franja de confianza */
+.franja{background:var(--verde-hondo);color:var(--crema);border-top:1px solid #c9a85c40}
+.franja ul{list-style:none;margin:0;padding-block:1.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:1rem 2rem}
+.franja li{display:flex;gap:.7rem;align-items:baseline;min-width:0}
+.franja b{font-family:var(--f-tit);font-size:1.5rem;color:var(--oro);font-weight:600;white-space:nowrap}
+.franja span{font-size:.95rem;color:#d4cab2}
+
+/* Secciones */
+section.bloque{padding-block:clamp(3.5rem,8vw,6rem)}
+.cab{max-width:62ch;margin-bottom:2.6rem}
+.cab h2{font-size:clamp(1.9rem,4vw,2.8rem);margin-top:.6rem}
+.cab p{color:var(--tinta-2);margin:.9rem 0 0;font-size:1.12rem}
+.rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:1.4rem}
+.tarjeta{min-width:0;background:var(--superficie);border:1px solid var(--borde);border-radius:14px;padding:1.7rem 1.6rem;display:flex;flex-direction:column;gap:.7rem;position:relative}
+.tarjeta::before{content:"";position:absolute;left:1.6rem;top:0;width:44px;height:3px;background:var(--rosa);border-radius:0 0 3px 3px}
+.tarjeta .num{font-family:var(--f-mono);font-size:.78rem;color:var(--rosa-hondo);letter-spacing:.12em}
+.tarjeta h3{font-size:1.4rem}
+.tarjeta p{margin:0;color:var(--tinta-2)}
+.tarjeta ul{margin:.2rem 0 0;padding-left:1.1rem;color:var(--tinta)}
+.tarjeta li{margin-bottom:.25rem}
+.tarjeta.destaca{background:var(--verde);color:var(--crema);border-color:var(--verde)}
+.tarjeta.destaca p,.tarjeta.destaca ul{color:#ddd3bb}
+.tarjeta.destaca .num{color:var(--rosa)}
+.alterna{background:var(--crema-2)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .alterna{background:#132a22}}
+:root[data-theme="dark"] .alterna{background:#132a22}
+
+/* Pasos */
+.pasos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:1.6rem;counter-reset:p}
+.pasos li{counter-increment:p;min-width:0;border-top:1px solid var(--borde);padding-top:1.1rem}
+.pasos li::before{content:"0" counter(p);font-family:var(--f-tit);font-size:2.2rem;color:var(--rosa-hondo);display:block;line-height:1;margin-bottom:.6rem}
+.pasos b{display:block;font-family:var(--f-tit);font-size:1.2rem;font-weight:600;margin-bottom:.3rem}
+.pasos span{color:var(--tinta-2)}
+
+/* Regalos */
+.regalos{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
+@media (max-width:820px){.regalos{grid-template-columns:1fr}}
+.palabras{display:grid;gap:.9rem}
+.palabra{display:flex;gap:1rem;align-items:center;background:var(--superficie);border:1px solid var(--borde);border-radius:12px;padding:1rem 1.2rem;min-width:0}
+.palabra code{font-family:var(--f-mono);font-weight:500;background:var(--verde);color:var(--crema);padding:.35rem .7rem;border-radius:6px;letter-spacing:.08em;flex:none}
+.palabra p{margin:0;color:var(--tinta-2)}
+
+/* Cita */
+.cita{background:var(--verde);color:var(--crema);text-align:center}
+.cita .env{padding-block:clamp(3rem,7vw,5rem)}
+.cita blockquote{margin:0 auto;max-width:28ch;font-family:var(--f-tit);font-size:clamp(1.8rem,4.4vw,3rem);line-height:1.2}
+.cita blockquote i{color:var(--rosa)}
+.cita p{margin:1.2rem 0 0;color:var(--oro);font-family:var(--f-mono);letter-spacing:.16em;text-transform:uppercase;font-size:.8rem}
+
+/* Contacto */
+.contacto{background:radial-gradient(120% 90% at 20% 0%,var(--verde-2),var(--verde-hondo));color:var(--crema)}
+.contacto .env{padding-block:clamp(3.5rem,8vw,6rem);display:grid;grid-template-columns:1.1fr .9fr;gap:3rem;align-items:center}
+@media (max-width:820px){.contacto .env{grid-template-columns:1fr}}
+.contacto h2{font-size:clamp(2rem,4.6vw,3.2rem);color:var(--crema)}
+.contacto h2 i{color:var(--rosa)}
+.contacto p{color:#ddd3bb;max-width:44ch}
+.datos{display:grid;gap:1rem;background:#0b1e1866;border:1px solid #c9a85c40;border-radius:14px;padding:1.6rem;min-width:0}
+.datos div{display:grid;gap:.15rem;min-width:0}
+.datos .eti{font-size:.68rem}
+.dato{font-size:1.08rem;color:var(--crema);overflow-wrap:anywhere;user-select:all}
+a.dato{text-decoration:none;border-bottom:1px solid #c9a85c80}
+
+/* Legal */
+.legal-env{padding-block:3rem}
+.legal-env h2{font-size:1.6rem;margin-bottom:1rem}
+details{border-top:1px solid var(--borde);padding-block:.9rem;max-width:75ch}
+summary{font-family:var(--f-tit);font-size:1.2rem;cursor:pointer}
+details p,details li{color:var(--tinta-2);font-size:1rem}
+details ul{padding-left:1.1rem}
+.pendiente{background:#d9a7a540;padding:0 .3rem;border-radius:3px}
+footer{background:var(--verde-hondo);color:#b9b096;font-size:.9rem}
+footer .env{padding-block:1.8rem;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.8rem}
+footer a{color:var(--crema)}
+.mini{font-size:.78rem;opacity:.75}
+</style>
+
+</head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="logo" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="98" fill="#1b4033"/>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#c9a85c" stroke-width="2.4"/>
+      <circle cx="100" cy="100" r="75.5" fill="none" stroke="#c9a85c" stroke-width=".6" opacity=".7"/>
+      <text x="100" y="114" text-anchor="middle" font-family="Playfair Display, Georgia, serif" font-weight="700" font-size="58" fill="#efe5cc" letter-spacing="-2">P<tspan fill="#d9a7a5" font-style="italic">D</tspan></text>
+      <line x1="72" y1="126" x2="128" y2="126" stroke="#c9a85c" stroke-width="1"/>
+      <text x="100" y="142" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="#c9a85c" letter-spacing="3.2">PARTIDA DOBLE</text>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="barra">
+  <div class="env">
+    <a class="marca" href="#inicio" aria-label="Partida Doble, inicio">
+      <svg aria-hidden="true"><use href="#logo"/></svg>
+      <span><b>Partida Doble</b><small>Soy tu contable</small></span>
+    </a>
+    <ul class="menu">
+      <li><a href="#servicios">Servicios</a></li>
+      <li><a href="#como">Cómo trabajo</a></li>
+      <li><a href="#regalos">Plantillas gratis</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+    <a class="btn lleno" href="#contacto">Consulta gratuita</a>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="portada" aria-labelledby="t-portada">
+    <div class="env">
+      <div>
+        <div class="eti">Soy tu contable · Autónomos, pymes y familias</div>
+        <h1 id="t-portada">Esto es lo que <i>hago por ti</i></h1>
+        <ul class="vendo">
+          <li><b>Te llevo las cuentas y los impuestos.</b> Tú me mandas una foto de tus facturas; yo lo apunto todo y presento a tiempo.</li>
+          <li><b>Te consigo las ayudas que te tocan.</b> Busco cada mes las subvenciones para ti, las pido y te acompaño hasta cobrarlas.</li>
+          <li><b>Te quito el papeleo.</b> Facturas, cobros y bancos al día, sin que tengas que contratar a nadie.</li>
+          <li><b>Te monto un asistente con IA.</b> Que te ordene el correo, los papeles y la agenda y te ahorre horas cada semana.</li>
+        </ul>
+        <div class="acciones">
+          <a class="btn lleno" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform">Pide tu primera consulta gratuita</a>
+          <a class="btn" href="#servicios">Ver servicios</a>
+        </div>
+      </div>
+      <div class="sello"><svg viewBox="0 0 200 200" role="img" aria-label="Logotipo de Partida Doble"><use href="#logo"/></svg></div>
+    </div>
+  </section>
+
+  <div class="franja">
+    <ul class="env">
+      <li><b>+30</b><span>años en administración, contabilidad y tesorería</span></li>
+      <li><b>100 %</b><span>en remoto, desde cualquier punto de España</span></li>
+      <li><b>BOE</b><span>cada cifra, comprobada en la fuente oficial</span></li>
+      <li><b>1.ª</b><span>consulta gratuita y total confidencialidad</span></li>
+    </ul>
+  </div>
+
+  <section class="bloque" id="servicios" aria-labelledby="t-serv">
+    <div class="env">
+      <div class="cab">
+        <div class="eti">Servicios</div>
+        <h2 id="t-serv">Tu departamento de administración y finanzas, sin tenerlo en plantilla</h2>
+        <p>Pagas solo el trabajo que necesitas: sin nóminas, sin Seguridad Social y sin vacaciones que cubrir.</p>
+      </div>
+      <div class="rejilla">
+        <article class="tarjeta">
+          <div class="num">01 · Autónomos y pymes</div>
+          <h3>Contabilidad y fiscalidad</h3>
+          <p>Tus libros al día y tus impuestos presentados en plazo, con un resumen claro cada mes de cómo va tu negocio.</p>
+        </article>
+        <article class="tarjeta">
+          <div class="num">02 · Empresas</div>
+          <h3>Administración por horas</h3>
+          <ul><li>Facturas y proveedores al día</li><li>Cobros reclamados a tiempo</li><li>Bancos cuadrados y tesorería prevista</li><li>Refuerzo en cierres, bajas y vacaciones</li></ul>
+        </article>
+        <article class="tarjeta destaca">
+          <div class="num">03 · El dinero que te toca</div>
+          <h3>Ayudas y subvenciones</h3>
+          <p>Revisamos cada mes las convocatorias que encajan contigo, preparamos la solicitud y te acompañamos hasta la justificación.</p>
+        </article>
+        <article class="tarjeta">
+          <div class="num">04 · Inteligencia artificial</div>
+          <h3>Te monto tu asistente con IA</h3>
+          <p>Un asistente que te ordena el correo, los papeles y la agenda de tu negocio, configurado para tu forma de trabajar.</p>
+        </article>
+        <article class="tarjeta">
+          <div class="num">05 · Familias</div>
+          <h3>Las cuentas de casa</h3>
+          <p>Tu presupuesto, tus recibos y tus ayudas por hijos o vivienda, en orden. Y las cartas de Hacienda, explicadas.</p>
+        </article>
+        <article class="tarjeta">
+          <div class="num">06 · Hazlo tú</div>
+          <h3>Plantillas Excel</h3>
+          <p>Presupuesto familiar, cash flow a 13 semanas, control de cobros o tesorería de la AMPA: listas para usar, con instrucciones.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloque alterna" id="como" aria-labelledby="t-como">
+    <div class="env">
+      <div class="cab">
+        <div class="eti">Cómo trabajo</div>
+        <h2 id="t-como">Tú haces la foto. Yo, el resto.</h2>
+      </div>
+      <ol class="pasos">
+        <li><b>Hablamos</b><span>Primera consulta gratuita: vemos tus números y lo que necesitas.</span></li>
+        <li><b>Me mandas tus papeles</b><span>Fotos de facturas y extractos, por correo o mensaje, cuando te venga bien.</span></li>
+        <li><b>Lo pongo en orden</b><span>Cada apunte en su sitio, con la normativa vigente comprobada.</span></li>
+        <li><b>Recibes tus números</b><span>Cada mes, claros y entendibles, con los plazos y las ayudas que te tocan.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="bloque" id="regalos" aria-labelledby="t-reg">
+    <div class="env regalos">
+      <div class="cab" style="margin:0">
+        <div class="eti">Gratis en Instagram</div>
+        <h2 id="t-reg">Plantillas y guías de regalo</h2>
+        <p>Comenta la palabra en la publicación de <a href="https://www.instagram.com/finanzas.partidadoble/">@finanzas.partidadoble</a> y te llega por mensaje privado al momento.</p>
+        <p style="margin-top:1.6rem"><a class="btn lleno" href="https://www.instagram.com/finanzas.partidadoble/">Seguir en Instagram</a></p>
+      </div>
+      <div class="palabras">
+        <div class="palabra"><code>PLANTILLA</code><p>«Tu mes en una hoja»: adónde se va tu dinero cada mes.</p></div>
+        <div class="palabra"><code>BLACK</code><p>Control de precios: ¿la rebaja es real o inflada?</p></div>
+        <div class="palabra"><code>EMPRESA</code><p>Ayudas para autónomos y pymes, con plazos y requisitos.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cita" aria-label="Lema">
+    <div class="env">
+      <blockquote>«Cuentas claras, <i>casa tranquila.»</i></blockquote>
+      <p>Soy tu contable</p>
+    </div>
+  </section>
+
+  <section class="contacto" id="contacto" aria-labelledby="t-contacto">
+    <div class="env">
+      <div>
+        <div class="eti">Contacto</div>
+        <h2 id="t-contacto">Hablemos de tus cuentas. <i>La primera consulta es gratis.</i></h2>
+        <p>Déjame tu nombre y tu teléfono y te llamo. O escríbeme por Instagram.</p>
+        <p style="margin-top:1.6rem"><a class="btn lleno" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform">Quiero que me llames</a></p>
+      </div>
+      <div class="datos">
+        <div><span class="eti">Correo</span><span class="dato">finanzas.partidadoble@gmail.com</span></div>
+        <div><span class="eti">Instagram</span><a class="dato" href="https://www.instagram.com/finanzas.partidadoble/">@finanzas.partidadoble</a></div>
+        <div><span class="eti">Dónde</span><span class="dato">En remoto, para toda España</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="legal-env env" id="legal" aria-labelledby="t-legal">
+    <h2 id="t-legal">Información legal</h2>
+    <details id="aviso-legal">
+      <summary>Aviso legal</summary>
+      <p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI):</p>
+      <ul>
+        <li><b>Titular:</b> <span class="pendiente">[nombre y apellidos]</span>, con el nombre comercial Partida Doble.</li>
+        <li><b>NIF:</b> <span class="pendiente">[NIF]</span></li>
+        <li><b>Domicilio:</b> <span class="pendiente">[domicilio a efectos de notificaciones]</span></li>
+        <li><b>Correo:</b> finanzas.partidadoble@gmail.com</li>
+      </ul>
+      <p><b>Información general.</b> Los consejos y listas de ayudas de esta web son orientativos y se basan en la normativa vigente cuando se publican. Para tu caso concreto, lo vemos en la primera consulta.</p>
+      <p><b>Seguros.</b> La mediación de seguros la realiza un corredor de seguros inscrito en el registro de la DGSFP con la clave J3504.</p>
+      <p><b>Contenidos.</b> Los textos, imágenes, logotipo y plantillas son de Partida Doble. Puedes compartirlos citando la fuente.</p>
+      <p><b>Ley aplicable.</b> Esta web se rige por la ley española.</p>
+    </details>
+    <details id="privacidad">
+      <summary>Política de privacidad</summary>
+      <p>Según el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD):</p>
+      <ul>
+        <li><b>Responsable:</b> <span class="pendiente">[nombre y apellidos]</span> (Partida Doble), finanzas.partidadoble@gmail.com.</li>
+        <li><b>Qué datos:</b> los que nos das en el formulario o por mensaje: nombre, teléfono, correo y lo que necesitas.</li>
+        <li><b>Para qué:</b> llamarte, contestar tu consulta y, si contratas, prestarte el servicio.</li>
+        <li><b>Base legal:</b> tu consentimiento al enviar el formulario (art. 6.1.a RGPD) y, si contratas, el contrato (art. 6.1.b).</li>
+        <li><b>Cuánto tiempo:</b> mientras trabajemos juntos y después el que exija la ley. Si no llegas a contratar, se borran al cabo de un año.</li>
+        <li><b>Quién más los ve:</b> nadie; no se ceden ni se venden. El formulario y el correo funcionan con Google, como encargado del tratamiento, con la protección del Marco de Privacidad de Datos UE-EE. UU.</li>
+        <li><b>Tus derechos:</b> acceso, rectificación, supresión, limitación, oposición, portabilidad y retirada del consentimiento en finanzas.partidadoble@gmail.com. Puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</li>
+      </ul>
+    </details>
+    <details id="cookies">
+      <summary>Política de cookies</summary>
+      <p>Esta web no instala cookies de análisis, publicidad ni seguimiento, por eso no te pedimos que aceptes nada. Los tipos de letra se cargan desde Google Fonts, que no guarda cookies en tu navegador.</p>
+    </details>
+  </section>
+</main>
+
+<footer>
+  <div class="env">
+    <div>Partida Doble · Consultora contable, subvenciones e IA · Soy tu contable</div>
+    <div class="mini"><a href="#aviso-legal">Aviso legal</a> · <a href="#privacidad">Privacidad</a> · <a href="#cookies">Cookies</a></div>
+  </div>
+</footer>
+<script>
+function abrirLegal(){var d=document.getElementById(location.hash.slice(1));if(d&&d.tagName==='DETAILS'){d.open=true;d.scrollIntoView();}}
+addEventListener('hashchange',abrirLegal);abrirLegal();
+</script>
+
+</body></html>
