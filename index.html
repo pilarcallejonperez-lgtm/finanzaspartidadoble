@@ -46,6 +46,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .barra .btn{padding:.55rem 1rem;font-size:.9rem}
 @media (max-width:860px){.menu{display:none}}
 @media (max-width:440px){.barra .btn{display:none}}
+.flota{display:none}
+@media (max-width:860px){.flota{display:block;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;padding:.8rem 1.6rem;font-size:1rem;box-shadow:0 6px 18px rgba(0,0,0,.28);white-space:nowrap}body{padding-bottom:84px}}
 
 /* Portada */
 .portada{background:radial-gradient(120% 90% at 80% 10%,var(--verde-2),var(--verde) 45%,var(--verde-hondo));color:var(--crema);overflow:hidden}
@@ -167,6 +169,7 @@ footer a{color:var(--crema)}
     <a class="btn lleno" href="#contacto">Consulta gratuita</a>
   </div>
 </header>
+<a class="btn lleno flota" href="#contacto">Consulta gratuita</a>
 
 <main id="inicio">
   <section class="portada" aria-labelledby="t-portada">
