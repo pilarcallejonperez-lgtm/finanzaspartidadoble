@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Papeles en orden</title>
+<meta name="description" content="Tus papeles de casa, en tu móvil. Finanzas Partida Doble.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#1f4535">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Papeles">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<header class="cab">
+  <div class="logo"><img src="icono.svg" alt=""><div><b>Papeles en orden</b><small id="estadoLinea">Finanzas Partida Doble</small></div></div>
+</header>
+
+<main>
+<!-- SIN LLAVE: conectar con el ordenador -->
+<section class="vista" id="v-conectar" hidden>
+  <div class="tarjeta">
+    <h2 id="conTitulo">Escanea el código de tu ordenador</h2>
+    <p id="conAviso" class="alerta" hidden></p>
+    <ol class="pasos">
+      <li>En tu ordenador, abre «Papeles en orden» y entra en <b>Ajustes</b>.</li>
+      <li>Toca <b>Conectar mi móvil</b>: sale un código cuadrado.</li>
+      <li>Abre la <b>cámara</b> del móvil, apunta al código y toca el aviso que aparece.</li>
+    </ol>
+  </div>
+  <form class="tarjeta" id="formCodigo" autocomplete="off">
+    <h3>¿No puedes escanearlo?</h3>
+    <label>Pega aquí el enlace o el código de tu ordenador
+      <input type="text" id="codigo" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"></label>
+    <div class="acciones"><button class="btn" type="submit">Conectar</button></div>
+    <p class="mensaje" id="msgCodigo"></p>
+  </form>
+  <p class="privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>
+    Tus datos viajan cerrados con una llave que solo tienen tu ordenador y tu móvil.</p>
+</section>
+
+<!-- INICIO -->
+<section class="vista" id="v-inicio" hidden>
+  <label class="btn oro grande-btn" for="archivo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+    Mandar un papel</label>
+  <p class="nota centro" id="esperando" hidden></p>
+  <div id="sinDatos" class="tarjeta" hidden>
+    <h3>Casi está</h3>
+    <p>Tu móvil ya está conectado. En cuanto tu ordenador tenga abierta la aplicación, aquí verás tus cuentas.</p>
+  </div>
+  <div id="conDatos" hidden>
+    <h2 id="mesTxt" class="centro">—</h2>
+    <div id="avisosInicio"></div>
+    <div class="tarjeta">
+      <h3>Este mes has gastado</h3>
+      <div class="cifra" id="gastoMes">0 €</div>
+      <div class="compara">
+        <div><small>Mes anterior</small><b id="gastoAnt">—</b></div>
+        <div><small>Mismo mes del año pasado</small><b id="gastoPas">—</b></div>
+      </div>
+    </div>
+    <div class="tarjeta disponible" id="bloqueSemana">
+      <h3 id="semanaTxt">Disponible esta semana</h3>
+      <div class="cifra" id="dispSemana">0 €</div>
+      <small id="dispMes"></small>
+    </div>
+    <div class="tarjeta">
+      <h3>En qué se va tu dinero</h3>
+      <div id="grafCat"></div>
+      <div class="leyenda"><span>Este mes</span><span class="ant">Mes anterior</span></div>
+    </div>
+    <div class="tarjeta">
+      <h3>Próximos recibos</h3>
+      <div id="proxCargos"></div>
+    </div>
+  </div>
+  <p class="privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>
+    Tus datos viajan cerrados con una llave que solo tienen tu ordenador y tu móvil.</p>
+</section>
+
+<!-- AVISOS -->
+<section class="vista" id="v-avisos" hidden>
+  <h2>Avisos</h2>
+  <div class="tarjeta">
+    <h3>Vencimientos</h3>
+    <p class="nota" id="notaDias"></p>
+    <div id="listaVenc"></div>
+  </div>
+  <div class="tarjeta">
+    <h3>Gastos fijos que se repiten</h3>
+    <div id="listaFijos"></div>
+  </div>
+  <div class="tarjeta">
+    <h3>Suscripciones</h3>
+    <div id="listaSus"></div>
+  </div>
+</section>
+
+<!-- PAPELES -->
+<section class="vista" id="v-papeles" hidden>
+  <h2>Mis papeles</h2>
+  <div class="tarjeta">
+    <label>Buscar<input type="search" id="buscar" placeholder="Iberdrola, seguro, colegio…" enterkeyhint="search"></label>
+  </div>
+  <p class="nota">Los últimos que he ordenado en tu ordenador. Los documentos se quedan allí.</p>
+  <div class="tarjeta" id="listaPapeles"></div>
+</section>
+
+<!-- MANDAR -->
+<section class="vista" id="v-mandar" hidden>
+  <h2>Mandar un papel</h2>
+  <p>Haz una foto a la factura o al ticket, o elige una captura o un PDF. Llega a tu ordenador y lo ordeno yo.</p>
+  <label class="btn oro grande-btn" for="archivo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+    Hacer foto o elegir</label>
+  <p class="mensaje" id="msgMandar" role="status"></p>
+  <div class="tarjeta" id="tarjetaEnviados" hidden>
+    <h3>Lo que has mandado</h3>
+    <div id="listaEnviados"></div>
+  </div>
+  <p class="privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>
+    Tus datos viajan cerrados con una llave que solo tienen tu ordenador y tu móvil.</p>
+  <p class="nota centro"><button class="enlace" type="button" id="btnOlvidar">Desconectar este móvil</button></p>
+</section>
+</main>
+
+<nav class="menu" id="menu" aria-label="Secciones" hidden>
+  <button data-ir="inicio" aria-current="true"><span class="i">⌂</span>Inicio</button>
+  <button data-ir="avisos"><span class="i">⏰</span>Avisos<span class="globo" id="globoAvisos" hidden>0</span></button>
+  <button data-ir="papeles"><span class="i">▤</span>Papeles</button>
+  <button data-ir="mandar" class="mandar"><span class="i">＋</span>Mandar</button>
+</nav>
+
+<input type="file" id="archivo" class="oculto" accept="image/*,application/pdf" multiple>
+<script src="config.js"></script>
+<script src="nube.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
