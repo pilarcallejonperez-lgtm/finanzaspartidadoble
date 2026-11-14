@@ -148,6 +148,30 @@ html,body{overflow-x:clip}
 /* botón fijo */
 .flota{position:fixed;left:auto;right:calc(18px + env(safe-area-inset-right,0px));transform:none;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;box-shadow:0 6px 18px #0003;white-space:nowrap;padding:.85rem 1.7rem}
 .aviso{background:var(--oro-s);color:#23302a;font-size:.85rem;text-align:center;padding:.45rem 1rem}
+
+.cta-hero{display:none}
+@media (min-width:1100px){
+  body .portada .env{grid-template-columns:auto 1fr 280px}
+  body .portada h1{font-size:2.75rem;white-space:nowrap}
+  body .portada .lema-foto{font-size:1.45rem;text-align:left;hyphens:manual}
+  body .portada .cta-txt{text-align:left;hyphens:manual;color:#e2dccb}
+  body .portada .foto{width:170px;height:170px}
+  .cta-hero{display:flex;flex-direction:column;gap:.5rem;grid-column:3;grid-row:1/span 2;align-self:center;position:relative;background:var(--verde-h);color:var(--sobre-verde);border-radius:18px;padding:1.6rem 1.5rem;box-shadow:0 18px 40px -18px #163428aa;overflow:hidden;isolation:isolate}
+  .cta-hero::before{content:"";position:absolute;inset:0;border-radius:18px;padding:1.5px;background:conic-gradient(from var(--giro,0deg),#c9a85c00 0deg,#e6c98a 60deg,#c9a85c00 140deg,#c9a85c00 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:giro 6s linear infinite;z-index:-1}
+  .cta-hero .eti{color:var(--oro-s)}
+  .cta-tit{font-family:var(--f-tit);font-size:1.55rem;line-height:1.15}
+  .cta-txt{margin:0;font-size:.98rem;color:#d9d2c0;text-align:left}
+  .cta-btn{margin-top:.5rem;position:relative;overflow:hidden;display:block;text-align:center;text-decoration:none;font-weight:600;padding:.9rem 1rem;border-radius:999px;background:linear-gradient(135deg,#d8b77a,#b8924a);color:#163428;box-shadow:0 0 0 0 #d8b77a88;animation:latido 2.8s ease-in-out infinite}
+  .cta-btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,#ffffff8c,transparent);transform:skewX(-20deg);animation:brillo 3.6s ease-in-out infinite}
+  .cta-btn:hover{filter:brightness(1.05)}
+  .cta-pie{font-size:.8rem;color:#b9b39f;text-align:center}
+  body .flota{display:none}
+}
+@property --giro{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes giro{to{--giro:360deg}}
+@keyframes brillo{0%,55%{left:-60%}85%,100%{left:130%}}
+@keyframes latido{0%,100%{box-shadow:0 0 0 0 #d8b77a66}50%{box-shadow:0 0 0 8px #d8b77a00}}
+@media (prefers-reduced-motion:reduce){.cta-hero::before,.cta-btn,.cta-btn::after{animation:none}}
 </style>
 </head><body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -192,6 +216,13 @@ html,body{overflow-x:clip}
       <p class="lema-foto">«La lealtad es como la vida, un camino de doble sentido.»</p>
     </div>
     <p>En contabilidad, cada apunte tiene dos partes que siempre cuadran: el debe y el haber. Así entiendo la confianza. Tú me confías tus cuentas y yo te respondo con lealtad: cuido tus papeles y tu dinero como si fueran míos, te digo siempre la verdad sobre tus números y lo que me cuentas se queda entre tú y yo. Te contesto en menos de 24 horas. Elige qué necesitas:</p>
+    <aside class="cta-hero" aria-label="Primera consulta gratis">
+      <div class="eti">Primera consulta</div>
+      <div class="cta-tit">Gratis y sin compromiso</div>
+      <p class="cta-txt">Cuéntame qué necesitas. Te contesto en menos de 24 horas.</p>
+      <a class="cta-btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">Pide tu consulta gratis</a>
+      <div class="cta-pie">Confidencial · Valladolid y en remoto</div>
+    </aside>
   </div></section>
 
   <div class="env puertas" id="servicios">
@@ -293,8 +324,8 @@ html,body{overflow-x:clip}
 
   <section class="bloque" style="padding-top:0"><div class="env">
     <div class="regalo">
-      <p><b>Plantilla gratis «Tu mes en una hoja».</b> Adónde se va tu dinero cada mes, en Excel. ¿Prefieres que te lo miremos? Escríbenos <b>ME INTERESA</b> por Instagram y te contesto yo.</p>
-      <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="plantillas/Tu_mes_en_una_hoja.xlsx" download>Descargar plantilla</a><a class="btn fino" href="https://ig.me/m/finanzas.partidadoble" target="_blank" rel="noopener">ME INTERESA</a></span>
+      <p><b>Plantilla gratis «Tu mes en una hoja».</b> Adónde se va tu dinero cada mes, en Excel. ¿Prefieres que te lo miremos? Pulsa <b>ME INTERESA</b>, cuéntame qué necesitas y te contesto yo.</p>
+      <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="plantillas/Tu_mes_en_una_hoja.xlsx" download>Descargar plantilla</a><a class="btn fino" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">ME INTERESA</a></span>
     </div>
   </div></section>
 
