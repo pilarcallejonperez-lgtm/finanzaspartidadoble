@@ -4,18 +4,22 @@
    Flujo para conectar (igual para todas): abrir finanzaspartidadoble.es/app → ponerla en la pantalla de inicio →
    abrir el icono → «Escanear el código» → apuntar al QR del ordenador. Plan B: pegar el enlace. */
 'use strict';
-const VERSION_APP = '2026-11-14.3';  // súbela al publicar un cambio (sale en la pantalla de soporte)
+const VERSION_APP = '2026-11-15.1';  // súbela al publicar un cambio (sale en la pantalla de soporte)
 const CFG = window.PAPELES_MOVIL || {};
 const $ = id => document.getElementById(id);
 const K = {llave: 'pp-llave', cache: 'pp-resumen', visto: 'pp-recibido', enviados: 'pp-enviados', vista: 'pp-vista',
-  usadas: 'pp-k-usadas', recibidoEn: 'pp-recibido-en', enNavegador: 'pp-en-navegador'};
+  usadas: 'pp-k-usadas', recibidoEn: 'pp-recibido-en', enNavegador: 'pp-en-navegador', marca: 'pp-marca'};
+// Tras «Mandar un papel» se mira cada 5 s (solo la lista de archivos, unos cientos de bytes) durante 2 minutos como
+// mucho, y solo con la app a la vista; el resumen entero solo se baja cuando ha cambiado. Luego, cada 2 minutos.
+const PRISA_CADA = 5000, PRISA_DURA = 2 * 60 * 1000, NORMAL_CADA = 2 * 60 * 1000;
 const L = {
   get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* modo privado: solo en memoria */ } },
   del: k => { try { localStorage.removeItem(k); } catch (e) { /* nada */ } },
 };
 const MAX_MB = 25;
-const S = {llave: null, carpeta: null, al: null, datos: null, vista: 'inicio', enviando: false, recargar: false};
+const S = {llave: null, carpeta: null, al: null, datos: null, vista: 'inicio', enviando: false, recargar: false,
+  prisaHasta: 0, timerPrisa: 0, ultimosIds: [], actualizando: null};
 
 /* ------------------------------------------------ dónde estamos: iPhone o Android, Safari o Chrome, navegador o app del icono */
 const ENT = (() => {
@@ -34,6 +38,10 @@ const ENT = (() => {
 })();
 
 const eur = n => (Number(n) || 0).toLocaleString('es-ES', {style: 'currency', currency: 'EUR'});
+// Importe con su moneda: «29,54 $», «3,20 £»; en euros, como siempre
+const SIMBOLOS = {EUR: '€', USD: '$', GBP: '£'};
+const dinero = (n, divisa, simbolo) => !divisa || divisa === 'EUR' ? eur(n)
+  : (Number(n) || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + (simbolo || SIMBOLOS[divisa] || divisa);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const fCorta = s => s ? new Date(String(s).slice(0, 10) + 'T12:00').toLocaleDateString('es-ES', {day: 'numeric', month: 'short', year: 'numeric'}) : '';
 const horaTxt = s => {
@@ -85,7 +93,7 @@ function marcarDireccion(llave) {
   if (location.hash !== quiere) history.replaceState(null, '', location.pathname + location.search + quiere);
 }
 async function usarLlave(llave) {
-  if (llave !== L.get(K.llave)) { [K.cache, K.visto, K.enviados, K.recibidoEn].forEach(L.del); S.datos = null; }
+  if (llave !== L.get(K.llave)) { [K.cache, K.visto, K.enviados, K.recibidoEn, K.marca].forEach(L.del); S.datos = null; }
   S.llave = llave; L.set(K.llave, llave);
   const h = await huella(llave), u = usadas();
   if (!u.includes(h)) L.set(K.usadas, JSON.stringify([h, ...u].slice(0, 20)));
@@ -94,8 +102,9 @@ async function usarLlave(llave) {
   marcarDireccion(llave);
 }
 function olvidar(motivo) {
-  [K.llave, K.cache, K.visto, K.enviados, K.recibidoEn].forEach(L.del);
+  [K.llave, K.cache, K.visto, K.enviados, K.recibidoEn, K.marca].forEach(L.del);
   S.llave = S.carpeta = S.al = S.datos = null;
+  terminarPrisa();
   marcarDireccion(null);
   pantallaConectar(motivo);
 }
@@ -307,13 +316,27 @@ $('btnEscanear').onclick = () => { abrirCamara().catch(e => { console.error(e); 
 $('btnCerrarCam').onclick = () => cerrarCamara();
 
 /* ------------------------------------------------ el resumen */
-async function actualizar() {
+// Marca del resumen en el servidor (fecha y eTag): si no ha cambiado, no hace falta bajarlo otra vez
+const marcaDe = o => o ? (o.updated_at || '') + '|' + ((o.metadata && (o.metadata.eTag || o.metadata.size)) || '') : '';
+function actualizar() {  // una sola a la vez (el ritmo rápido y el normal pueden coincidir)
+  if (!S.actualizando) S.actualizando = actualizarYa().finally(() => { S.actualizando = null; });
+  return S.actualizando;
+}
+async function actualizarYa() {
   if (!S.al) return;
-  linea('Poniéndome al día…');
+  const llave = S.llave;
+  let marca = '';
+  try {  // primero, la lista de la carpeta (unos cientos de bytes): ¿ha cambiado el resumen?
+    marca = marcaDe((await S.al.listar(S.carpeta)).find(o => o.name === 'resumen.enc'));
+    if (marca && S.datos && marca === L.get(K.marca)) { linea('Al día: ' + horaTxt(S.datos.generado)); return comprobarEnviados(); }
+  } catch (e) { /* sin conexión o un servidor raro: se prueba a bajarlo, que dice mejor qué pasa */ }
+  if (!S.datos) linea('Poniéndome al día…');
   try {
     const bytes = await S.al.bajar(S.carpeta + '/resumen.enc');
     const datos = await Nube.descifrarJSON(S.llave, bytes, 'resumen');
+    if (llave !== S.llave) return;  // mientras tanto se ha conectado otro código
     L.set(K.cache, Nube.aB64(bytes)); L.set(K.visto, '1'); L.set(K.recibidoEn, new Date().toISOString());
+    if (marca) L.set(K.marca, marca);
     pintar(datos);
   } catch (e) {
     if (e.noExiste && L.get(K.visto)) return olvidar('Tu ordenador ha desconectado este móvil. Si quieres volver a verlo, escanea el código otra vez.');
@@ -321,7 +344,7 @@ async function actualizar() {
     if (e.noExiste) { pintarSinDatos(); linea('Esperando a tu ordenador'); }
     else linea(S.datos ? 'Sin conexión · lo último del ' + horaTxt(S.datos.generado) : 'Sin conexión ahora mismo');
   }
-  comprobarEnviados();
+  await comprobarEnviados();
 }
 function pintarSinDatos() { if (!S.datos) { $('sinDatos').hidden = false; $('conDatos').hidden = true; } }
 
@@ -333,6 +356,7 @@ const filaFijo = f => `<div class="fila"><div class="txt"><b>${esc(f.nombre)}</b
 
 function pintar(d) {
   S.datos = d;
+  anotarOrdenados(d.movil);
   linea('Al día: ' + horaTxt(d.generado));
   $('sinDatos').hidden = true; $('conDatos').hidden = false;
   // Inicio
@@ -352,6 +376,14 @@ function pintar(d) {
   d.subidas.slice(0, 2).forEach(s => avisos.push(`<div class="alerta">↑ ${esc(s)}</div>`));
   const p = d.pendientes || {};
   if (p.en_duda) avisos.push(`<div class="alerta verde">${p.en_duda === 1 ? 'Un movimiento del banco está' : p.en_duda + ' movimientos del banco están'} en duda: dímelo en tu ordenador y lo recuerdo.</div>`);
+  // Movimientos en otra moneda (dólares…): se enseñan con su moneda y NO se suman a los euros (resúmenes desde el 14/11)
+  if (d.otra_divisa_txt) {
+    const otras = (d.otras_divisas || []).slice(0, 6).map(m =>
+      `<small class="otra-divisa" style="display:block;margin-top:4px">${esc(m.concepto || 'Movimiento')} · ${m.tipo === 'i' ? '+' : '−'}${dinero(m.importe, m.divisa, m.simbolo)}</small>`).join('');
+    const txt = d.otra_divisa_txt.charAt(0).toUpperCase() + d.otra_divisa_txt.slice(1);
+    const n = Object.values(d.otra_divisa || {}).reduce((a, b) => a + b, 0);
+    avisos.push(`<div class="alerta" id="avisoDivisas">${esc(txt)}: no ${n === 1 ? 'lo' : 'los'} cuento en tus gastos en euros.${otras}</div>`);
+  }
   $('avisosInicio').innerHTML = avisos.join('');
   const g = $('globoAvisos'); g.hidden = !avisan.length; g.textContent = avisan.length;
   const max = Math.max(1, ...d.categorias.map(c => Math.max(c.actual, c.anterior)));
@@ -398,6 +430,7 @@ async function mandar(f) {
   const bytes = await Nube.cifrar(S.llave, Nube.empaquetar(ficha, new Uint8Array(await f.arrayBuffer())), 'buzon');
   await S.al.subir(`${S.carpeta}/buzon/${id}.enc`, bytes, false);
   const l = enviados(); l.unshift({id, nombre, cuando: ficha.enviado, recogido: false}); guardarEnviados(l);
+  S.ultimosIds.push(id);
   return true;
 }
 $('archivo').onchange = async () => {
@@ -406,14 +439,16 @@ $('archivo').onchange = async () => {
   ir('mandar');
   let bien = 0;
   S.enviando = true;
+  S.ultimosIds = [];
   try {
     for (const [i, f] of lista.entries()) {
       avisar('msgMandar', lista.length > 1 ? `Enviando ${i + 1} de ${lista.length}…` : 'Enviando…');
       try { if (await mandar(f)) bien++; }
       catch (e) { avisar('msgMandar', 'No he podido enviarlo. Mira si tienes conexión y vuelve a probar.', true); pintarEnviados(); return; }
     }
-    if (bien) avisar('msgMandar', `✓ ${bien === 1 ? 'Enviado' : bien + ' enviados'}. Tu ordenador ${bien === 1 ? 'lo' : 'los'} ordenará en cuanto esté encendido.`);
-    pintarEnviados(); comprobarEnviados();
+    if (bien) avisar('msgMandar', bien === 1 ? 'Enviado ✓ · lo estoy ordenando…' : `✓ ${bien} enviados · los estoy ordenando…`);
+    pintarEnviados();
+    if (bien) empezarPrisa();
   } finally {
     S.enviando = false;
     if (S.recargar && !ESC.stream) setTimeout(recargarUnaVez, 2500);
@@ -422,20 +457,66 @@ $('archivo').onchange = async () => {
 function pintarEnviados() {
   const l = enviados();
   $('tarjetaEnviados').hidden = !l.length;
-  $('listaEnviados').innerHTML = l.map(e => `<div class="fila enviado"><div class="txt"><b>${esc(e.nombre)}</b><small>${horaTxt(e.cuando)}</small></div>
+  $('listaEnviados').innerHTML = l.map(e => `<div class="fila enviado"><div class="txt"><b>${esc(e.frase ? e.frase : e.nombre)}</b>
+    <small>${e.frase ? esc(e.detalle ? e.detalle + ' · ' : '') : ''}${horaTxt(e.cuando)}</small></div>
     ${e.recogido ? '<span class="chip ok estado">✓ En tu ordenador</span>' : '<span class="chip aviso estado">Esperando</span>'}</div>`).join('');
   const espera = l.filter(e => !e.recogido).length;
-  $('esperando').hidden = !espera;
-  $('esperando').textContent = espera ? `${espera === 1 ? 'Un papel espera' : espera + ' papeles esperan'} a que abras la aplicación en tu ordenador.` : '';
+  $('esperando').hidden = !espera || S.prisaHasta > Date.now();
+  $('esperando').textContent = espera ? `${espera === 1 ? 'Un papel espera' : espera + ' papeles esperan'} a que se encienda tu ordenador.` : '';
+}
+// El resumen dice qué ha sido de cada papel que mandó este móvil: «Factura de luz · 74,05 €» (lo pone el ordenador)
+function anotarOrdenados(lista) {
+  if (!Array.isArray(lista) || !lista.length) return;
+  const l = enviados();
+  let cambia = false;
+  for (const e of l) {
+    const x = lista.find(o => o.id === e.id && o.estado === 'ordenado');
+    if (x && !e.frase) { e.frase = x.frase; e.detalle = x.detalle || ''; e.recogido = true; cambia = true; }
+  }
+  if (!cambia) return;
+  guardarEnviados(l); pintarEnviados();
+  const mios = l.filter(e => S.ultimosIds.includes(e.id));
+  if (mios.length && mios.every(e => e.frase)) {
+    avisar('msgMandar', mios.length === 1 ? 'Ordenado: ' + mios[0].frase : `✓ Ordenados los ${mios.length}: ` + mios.map(e => e.frase).join(' · '));
+    S.ultimosIds = [];
+    terminarPrisa();
+  }
+}
+// Ritmo rápido tras mandar algo: cada 5 s, durante 2 minutos como mucho y solo con la app a la vista
+function empezarPrisa() {
+  S.prisaHasta = Date.now() + PRISA_DURA;
+  clearTimeout(S.timerPrisa);
+  S.timerPrisa = setTimeout(vueltaPrisa, PRISA_CADA);
+}
+function terminarPrisa() {
+  clearTimeout(S.timerPrisa); S.timerPrisa = 0;
+  const habia = S.prisaHasta > 0; S.prisaHasta = 0;
+  if (habia && S.ultimosIds.length) {  // se acabaron los 2 minutos sin verlo ordenado
+    const l = enviados().filter(e => S.ultimosIds.includes(e.id));
+    avisar('msgMandar', l.some(e => !e.recogido) ? '✓ Enviado. Tu ordenador lo ordenará en cuanto esté encendido.'
+      : '✓ Ya está en tu ordenador. En un momento lo verás ordenado.');
+    S.ultimosIds = [];
+  }
+  if ($('esperando')) pintarEnviados();
+}
+async function vueltaPrisa() {
+  S.timerPrisa = 0;
+  if (!S.prisaHasta) return;
+  if (Date.now() > S.prisaHasta || !S.al) return terminarPrisa();
+  if (document.visibilityState === 'visible') { try { await actualizar(); } catch (e) { /* a la próxima */ } }
+  if (S.prisaHasta) S.timerPrisa = setTimeout(vueltaPrisa, PRISA_CADA);
 }
 // ¿Lo ha recogido ya el ordenador? (si ya no está en el buzón de internet, sí)
 async function comprobarEnviados() {
-  const l = enviados();
-  if (!S.al || !l.some(e => !e.recogido)) return pintarEnviados();
+  if (!S.al || !enviados().some(e => !e.recogido)) return pintarEnviados();
   try {
     const hay = new Set((await S.al.listar(S.carpeta + '/buzon')).map(o => o.name));
+    const l = enviados();  // se vuelve a leer: mientras tanto puede haber llegado la frase de «Ordenado»
     l.forEach(e => { if (!hay.has(e.id + '.enc')) e.recogido = true; });
     guardarEnviados(l);
+    const mios = l.filter(e => S.ultimosIds.includes(e.id));
+    if (S.prisaHasta && mios.length && mios.every(e => e.recogido && !e.frase))
+      avisar('msgMandar', mios.length === 1 ? '✓ Ya está en tu ordenador · lo estoy ordenando…' : `✓ Ya están en tu ordenador · los estoy ordenando…`);
   } catch (e) { /* sin conexión: se mira la próxima vez */ }
   pintarEnviados();
 }
@@ -493,6 +574,9 @@ async function arrancar() {
   if (cache) { try { pintar(await Nube.descifrarJSON(S.llave, Nube.deB64(cache), 'resumen')); } catch (e) { L.del(K.cache); } }
   else pintarSinDatos();
   pintarEnviados();
+  // si se cerró la app justo después de mandar algo, al volver se sigue mirando deprisa un rato
+  const recientes = enviados().filter(e => !e.frase && Date.now() - new Date(e.cuando).getTime() < PRISA_DURA);
+  if (recientes.length) { S.ultimosIds = recientes.map(e => e.id); empezarPrisa(); }
   await actualizar();
 }
 window.addEventListener('hashchange', () => { if (/k=/.test(location.hash)) arrancar(); });
@@ -500,7 +584,8 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { actualizar(); buscarVersionNueva(); }
   else cerrarCamara();  // al salir de la app, la cámara se apaga
 });
-setInterval(() => { if (document.visibilityState === 'visible') actualizar(); }, 2 * 60 * 1000);
+// Ritmo normal: cada 2 minutos con la app a la vista (solo la lista; el resumen se baja si ha cambiado)
+setInterval(() => { if (document.visibilityState === 'visible' && !S.prisaHasta) actualizar(); }, NORMAL_CADA);
 arrancar().catch(e => { linea('No he podido arrancar'); console.error(e); });
 
 /* ------------------------------------------------ versiones nuevas: llegan solas */
