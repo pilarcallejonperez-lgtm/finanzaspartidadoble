@@ -21,34 +21,85 @@
 </head>
 <body>
 <header class="cab">
-  <div class="logo"><img src="icono.svg" alt=""><div><b>Papeles en orden</b><small id="estadoLinea">Finanzas Partida Doble</small></div></div>
+  <div class="logo" id="logo"><img src="icono.svg" alt=""><div><b>Papeles en orden</b><small id="estadoLinea">Finanzas Partida Doble</small></div></div>
 </header>
 
 <main>
+<!-- En el navegador del móvil, con llave: que la pongan en la pantalla de inicio -->
+<div class="alerta verde aviso-nav" id="avisoNavegador" hidden>
+  Ya estás conectada en el navegador. Para tenerla como app: <b>Compartir → Añadir a pantalla de inicio</b>.
+  <button class="enlace" type="button" id="btnVerInstalar">Ver cómo</button>
+</div>
+
+<!-- PRIMERO: ponerla en la pantalla de inicio (solo en el navegador del móvil) -->
+<section class="vista" id="v-instalar" hidden>
+  <div class="tarjeta">
+    <h2>Primero, ponme en tu pantalla de inicio</h2>
+    <p>Así me abres con un toque, como cualquier app.</p>
+    <ol class="pasos grandes" id="pasosInstalar"></ol>
+    <button class="btn oro grande-btn" type="button" id="btnInstalarAndroid" hidden>Ponerla en mi pantalla de inicio</button>
+  </div>
+  <div class="tarjeta" id="instalarDespues">
+    <h3>Después</h3>
+    <ol class="pasos grandes">
+      <li>Abre el icono <b>Papeles</b> <img class="mini-icono" src="icono.svg" alt=""> de tu pantalla de inicio.</li>
+      <li>Toca <b>Escanear el código</b> y apunta al código de tu ordenador.</li>
+    </ol>
+  </div>
+  <div class="tarjeta" id="instalarConectada" hidden>
+    <p class="ok-grande">✓ Ya estás conectada.</p>
+    <p>El icono se abrirá ya conectado: no tendrás que escanear nada más.</p>
+  </div>
+  <p class="nota centro"><button class="enlace" type="button" id="btnSinInstalar">Prefiero usarla aquí, en el navegador</button></p>
+</section>
+
 <!-- SIN LLAVE: conectar con el ordenador -->
 <section class="vista" id="v-conectar" hidden>
   <div class="tarjeta">
-    <h2 id="conTitulo">Escanea el código de tu ordenador</h2>
+    <h2 id="conTitulo">Conecta tu móvil</h2>
     <p id="conAviso" class="alerta" hidden></p>
-    <ol class="pasos">
-      <li>En tu ordenador, abre «Papeles en orden» y entra en <b>Ajustes</b>.</li>
-      <li>Toca <b>Conectar mi móvil</b>: sale un código cuadrado.</li>
-      <li>Abre la <b>cámara</b> del móvil, apunta al código y toca el aviso que aparece.</li>
+    <ol class="pasos grandes">
+      <li>En tu ordenador: <b>Ajustes › Conectar mi móvil</b>.</li>
+      <li>Aquí: toca <b>Escanear el código</b> y apunta al cuadrado.</li>
     </ol>
+    <button class="btn oro grande-btn" type="button" id="btnEscanear">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h6v2H5v4H3zm12 0h6v6h-2V5h-4zM3 15h2v4h4v2H3zm16 0h2v6h-6v-2h4zM7 7h4v4H7zm6 0h4v4h-4zm-6 6h4v4H7zm8 0h2v2h-2zm-2 2h2v2h-2zm2 0h2v2h-2z"/></svg>
+      <span id="btnEscanearTxt">Escanear el código</span></button>
+    <div class="escaner" id="escaner" hidden>
+      <div class="visor"><video id="video" playsinline muted autoplay></video><i class="marco" aria-hidden="true"></i></div>
+      <p class="mensaje centro" id="msgEscaner" role="status"></p>
+      <div class="acciones"><button class="btn sec" type="button" id="btnCerrarCam">Cerrar la cámara</button></div>
+    </div>
+    <p class="mensaje error" id="msgCamara" role="alert" hidden></p>
   </div>
-  <form class="tarjeta" id="formCodigo" autocomplete="off">
-    <h3>¿No puedes escanearlo?</h3>
-    <label>Pega aquí el enlace o el código de tu ordenador
-      <input type="text" id="codigo" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"></label>
-    <div class="acciones"><button class="btn" type="submit">Conectar</button></div>
-    <p class="mensaje" id="msgCodigo"></p>
-  </form>
+  <details class="tarjeta planb" id="planB">
+    <summary>¿No puedes escanearlo? Pega el enlace</summary>
+    <form id="formCodigo" autocomplete="off">
+      <label>Copia el enlace en tu ordenador y pégalo aquí
+        <input type="text" id="codigo" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"></label>
+      <div class="acciones"><button class="btn" type="submit">Conectar</button></div>
+      <p class="mensaje" id="msgCodigo"></p>
+    </form>
+  </details>
+  <p class="nota centro" id="irInstalar" hidden><button class="enlace" type="button" id="btnVerInstalar2">Ponerla en mi pantalla de inicio</button></p>
   <p class="privado"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>
     Tus datos viajan cerrados con una llave que solo tienen tu ordenador y tu móvil.</p>
 </section>
 
+<!-- SOPORTE (oculta: tocar 5 veces el logo) -->
+<section class="vista" id="v-diag" hidden>
+  <h2>Datos para soporte</h2>
+  <div class="tarjeta"><dl class="diag" id="diagLista"></dl></div>
+  <p class="nota">Aquí nunca sale tu llave.</p>
+  <div class="acciones">
+    <button class="btn sec" type="button" id="btnDiagRecargar">Poner al día la app</button>
+    <button class="btn" type="button" id="btnDiagCerrar">Cerrar</button>
+  </div>
+</section>
+
 <!-- INICIO -->
 <section class="vista" id="v-inicio" hidden>
+  <p class="mensaje centro" id="msgConectada" role="status"></p>
   <label class="btn oro grande-btn" for="archivo">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
     Mandar un papel</label>
@@ -139,6 +190,8 @@
   <button data-ir="papeles"><span class="i">▤</span>Papeles</button>
   <button data-ir="mandar" class="mandar"><span class="i">＋</span>Mandar</button>
 </nav>
+
+<div class="flecha" id="flecha" hidden aria-hidden="true"><span id="flechaTxt">Compartir está aquí abajo</span><i></i></div>
 
 <input type="file" id="archivo" class="oculto" accept="image/*,application/pdf" multiple>
 <script src="config.js"></script>
