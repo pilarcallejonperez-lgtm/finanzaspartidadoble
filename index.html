@@ -1,7 +1,16 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="index,follow">
-<title>Partida Doble</title>
-<meta name="description" content="Partida Doble · Consultora contable, subvenciones e IA. Contabilidad y fiscalidad para autónomos y pymes, administración por horas, ayudas y subvenciones, y asistentes con IA. En remoto, para toda España.">
+<title>Partida Doble · Ayudas, subvenciones y contabilidad</title>
+<meta name="description" content="Ayudas y subvenciones para empresas y autónomos en Valladolid y Castilla y León: te digo cuáles te tocan, preparo la solicitud y te acompaño hasta cobrarla. También contabilidad, administración por horas y papeles de casa. En remoto.">
+<link rel="canonical" href="https://finanzaspartidadoble.es/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"¿Qué ayudas hay para contratar en Castilla y León?","acceptedAnswer":{"@type":"Answer","text":"Además de las ayudas de la Junta, si contratas con contrato indefinido a una persona parada de larga duración tienes una bonificación en las cuotas de la Seguridad Social de 110 € o 128 € al mes, según el caso, durante 3 años (Real Decreto-ley 1/2023, artículo 21). Te digo cuáles encajan con tu caso."}},
+{"@type":"Question","name":"¿Puedo pedir una subvención si soy autónomo?","acceptedAnswer":{"@type":"Answer","text":"Sí. Muchas convocatorias de la Junta de Castilla y León y del ICE están abiertas a autónomos y pymes con centro de trabajo en la comunidad. Cada una tiene sus requisitos: los revisamos en la primera consulta, que es gratis."}},
+{"@type":"Question","name":"¿Cuánto tarda en cobrarse una subvención?","acceptedAnswer":{"@type":"Answer","text":"Depende de la convocatoria: normalmente se cobra después de justificar el gasto, aunque algunas permiten pedir un anticipo. Te lo digo antes de empezar, con los plazos de las bases oficiales."}},
+{"@type":"Question","name":"¿Qué tengo que hacer yo?","acceptedAnswer":{"@type":"Answer","text":"Mandarme los datos y las facturas que te pida. Yo reviso los requisitos, preparo la solicitud, controlo los plazos y te acompaño hasta la justificación."}}
+]}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -46,8 +55,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .barra .btn{padding:.55rem 1rem;font-size:.9rem}
 @media (max-width:860px){.menu{display:none}}
 @media (max-width:440px){.barra .btn{display:none}}
+/* Móvil: «Consulta gratuita» siempre a mano, fija abajo (Mapi, 13/11) */
 .flota{display:none}
-@media (max-width:860px){.flota{display:block;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;padding:.8rem 1.6rem;font-size:1rem;box-shadow:0 6px 18px rgba(0,0,0,.28);white-space:nowrap}body{padding-bottom:84px}}
+@media (max-width:860px){
+  .flota{display:block;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;padding:.8rem 1.6rem;font-size:1rem;box-shadow:0 6px 18px rgba(0,0,0,.28);white-space:nowrap}
+  body{padding-bottom:84px}
+}
 
 /* Portada */
 .portada{background:radial-gradient(120% 90% at 80% 10%,var(--verde-2),var(--verde) 45%,var(--verde-hondo));color:var(--crema);overflow:hidden}
@@ -141,6 +154,7 @@ footer a{color:var(--crema)}
 </style>
 
 </head><body>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="logo" viewBox="0 0 200 200">
@@ -180,8 +194,8 @@ footer a{color:var(--crema)}
         <ul class="vendo">
           <li><b>Te llevo las cuentas y los impuestos.</b> Tú me mandas una foto de tus facturas; yo lo apunto todo y presento a tiempo.</li>
           <li><b>Te consigo las ayudas que te tocan.</b> Busco cada mes las subvenciones para ti, las pido y te acompaño hasta cobrarlas.</li>
-          <li><b>Te quito el papeleo.</b> Facturas, cobros y bancos al día, sin que tengas que contratar a nadie.</li>
-          <li><b>Te monto un asistente con IA.</b> Que te ordene el correo, los papeles y la agenda y te ahorre horas cada semana.</li>
+          <li><b>Te ordeno los papeles de casa.</b> Haces una foto o reenvías el correo; yo lo guardo en tu carpeta y te aviso antes de que venza.</li>
+          <li><b>Soy tu secretaria.</b> Te monto un asistente con IA que te ordena el correo, los papeles y la agenda y te ahorra horas cada semana.</li>
         </ul>
         <div class="acciones">
           <a class="btn lleno" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform">Pide tu primera consulta gratuita</a>
@@ -217,7 +231,7 @@ footer a{color:var(--crema)}
         <article class="tarjeta">
           <div class="num">02 · Empresas</div>
           <h3>Administración por horas</h3>
-          <ul><li>Facturas y proveedores al día</li><li>Cobros reclamados a tiempo</li><li>Bancos cuadrados y tesorería prevista</li><li>Refuerzo en cierres, bajas y vacaciones</li></ul>
+          <ul><li>Facturas y proveedores al día</li><li>Cobros reclamados a tiempo</li><li>Tesorería: tu dinero, siempre a la vista</li><li>Refuerzo en cierres, bajas y vacaciones</li></ul>
         </article>
         <article class="tarjeta destaca">
           <div class="num">03 · El dinero que te toca</div>
@@ -225,17 +239,22 @@ footer a{color:var(--crema)}
           <p>Revisamos cada mes las convocatorias que encajan contigo, preparamos la solicitud y te acompañamos hasta la justificación.</p>
         </article>
         <article class="tarjeta">
-          <div class="num">04 · Inteligencia artificial</div>
+          <div class="num">04 · Soy tu secretaria</div>
           <h3>Te monto tu asistente con IA</h3>
-          <p>Un asistente que te ordena el correo, los papeles y la agenda de tu negocio, configurado para tu forma de trabajar.</p>
+          <p>Un asistente que te lee el correo, te ordena los papeles y te recuerda cada plazo, configurado para tu forma de trabajar. Cada mañana, el resumen del día en tu móvil.</p>
+        </article>
+        <article class="tarjeta destaca">
+          <div class="num">05 · Papeles en orden</div>
+          <h3>Tus papeles de casa, sin pelearte con ellos</h3>
+          <ul><li>Haces una foto o reenvías el correo, y listo</li><li>Todo guardado en tu carpeta, a mano desde el móvil</li><li>Te aviso antes de que venza un seguro o un recibo</li><li>Un resumen claro de tu mes</li></ul>
         </article>
         <article class="tarjeta">
-          <div class="num">05 · Familias</div>
+          <div class="num">06 · Familias</div>
           <h3>Las cuentas de casa</h3>
-          <p>Tu presupuesto, tus recibos y tus ayudas por hijos o vivienda, en orden. Y las cartas de Hacienda, explicadas.</p>
+          <p>Tu presupuesto, tus ayudas por hijos o vivienda y los papeles de tus padres, en orden. Y las cartas de Hacienda, explicadas.</p>
         </article>
         <article class="tarjeta">
-          <div class="num">06 · Hazlo tú</div>
+          <div class="num">07 · Hazlo tú</div>
           <h3>Plantillas Excel</h3>
           <p>Presupuesto familiar, cash flow a 13 semanas, control de cobros o tesorería de la AMPA: listas para usar, con instrucciones.</p>
         </article>
@@ -243,7 +262,50 @@ footer a{color:var(--crema)}
     </div>
   </section>
 
-  <section class="bloque alterna" id="como" aria-labelledby="t-como">
+  <section class="bloque alterna" id="ayudas" aria-labelledby="t-ayudas">
+    <div class="env">
+      <div class="cab">
+        <div class="eti">Ayudas abiertas ahora · actualizado a 13/11/2026</div>
+        <h2 id="t-ayudas">Subvenciones para empresas y autónomos en Castilla y León</h2>
+        <p>Cada mes reviso las convocatorias del BOE, el BOCYL y la Junta. Estas son algunas de las que están abiertas ahora. Te digo si encajan contigo, preparo la solicitud y te acompaño hasta cobrarla.</p>
+      </div>
+      <div class="rejilla">
+        <article class="tarjeta">
+          <div class="num">Digitalización</div>
+          <h3>Hasta 1.800 € para tu programa de gestión</h3>
+          <p>Para implantar un programa de gestión en tu negocio.</p>
+          <p><small>Fuente: BOCYL de 28/10/2026 (BDNS 937837).</small></p>
+        </article>
+        <article class="tarjeta destaca">
+          <div class="num">Abrir un negocio</div>
+          <h3>35 % de la inversión, a fondo perdido</h3>
+          <p>Para poner en marcha una actividad nueva en Castilla y León. Puede subir un 5 % o un 10 % más según los criterios de la convocatoria, y admite anticipo de hasta el 50 % con garantía. Plazo: hasta el 31/12/2026.</p>
+          <p><small>Fuente: BOCYL de 13/05/2026 (BDNS 904581).</small></p>
+        </article>
+        <article class="tarjeta">
+          <div class="num">Contratar</div>
+          <h3>110 € o 128 € al mes durante 3 años</h3>
+          <p>Bonificación en la Seguridad Social por contratar con contrato indefinido a una persona parada de larga duración.</p>
+          <p><small>Fuente: Real Decreto-ley 1/2023, artículo 21.</small></p>
+        </article>
+        <article class="tarjeta destaca">
+          <div class="num">Vender fuera</div>
+          <h3>45 % de tu proyecto internacional</h3>
+          <p>A fondo perdido, con hasta un 15 % adicional y un máximo de 120.000 € por empresa. Proyecto mínimo de 3.000 €. Plazo: hasta el 28/02/2027.</p>
+          <p><small>Fuente: BOCYL de 16/07/2026 (BDNS 919073).</small></p>
+        </article>
+      </div>
+      <div class="cab" style="margin-top:2.4rem">
+        <h2 style="font-size:1.5rem">Preguntas frecuentes sobre subvenciones</h2>
+      </div>
+      <details><summary>¿Qué ayudas hay para contratar en Castilla y León?</summary><p>Además de las ayudas de la Junta, si contratas con contrato indefinido a una persona parada de larga duración tienes una bonificación en la Seguridad Social de 110 € o 128 € al mes, según el caso, durante 3 años (Real Decreto-ley 1/2023, artículo 21). Te digo cuáles encajan con tu caso.</p></details>
+      <details><summary>¿Puedo pedir una subvención si soy autónomo?</summary><p>Sí. Muchas convocatorias de la Junta de Castilla y León y del ICE están abiertas a autónomos y pymes con centro de trabajo en la comunidad. Cada una tiene sus requisitos: los revisamos en la primera consulta, que es gratis.</p></details>
+      <details><summary>¿Cuánto tarda en cobrarse una subvención?</summary><p>Depende de la convocatoria: normalmente se cobra después de justificar el gasto, y algunas permiten pedir un anticipo. Te lo digo antes de empezar, con los plazos de las bases oficiales.</p></details>
+      <details><summary>¿Qué tengo que hacer yo?</summary><p>Mandarme los datos y las facturas que te pida. Yo reviso los requisitos, preparo la solicitud, controlo los plazos y te acompaño hasta la justificación.</p></details>
+    </div>
+  </section>
+
+  <section class="bloque" id="como" aria-labelledby="t-como">
     <div class="env">
       <div class="cab">
         <div class="eti">Cómo trabajo</div>
@@ -267,9 +329,8 @@ footer a{color:var(--crema)}
         <p style="margin-top:1.6rem"><a class="btn lleno" href="https://www.instagram.com/finanzas.partidadoble/">Seguir en Instagram</a></p>
       </div>
       <div class="palabras">
-        <div class="palabra"><code>PLANTILLA</code><p>«Tu mes en una hoja»: adónde se va tu dinero cada mes.</p></div>
-        <div class="palabra"><code>BLACK</code><p>Control de precios: ¿la rebaja es real o inflada?</p></div>
-        <div class="palabra"><code>EMPRESA</code><p>Ayudas para autónomos y pymes, con plazos y requisitos.</p></div>
+        <a class="palabra" style="text-decoration:none;color:inherit" href="https://ig.me/m/finanzas.partidadoble" target="_blank" rel="noopener"><code>ME INTERESA</code><p>Escríbeme por privado y te contesto yo. →</p></a>
+        <a class="palabra" style="text-decoration:none;color:inherit" href="https://finanzaspartidadoble.es/plantillas/Tu_mes_en_una_hoja.xlsx" download><code>PLANTILLA</code><p>«Tu mes en una hoja»: adónde se va tu dinero cada mes. Toca y descárgala gratis en Excel. →</p></a>
       </div>
     </div>
   </section>
@@ -290,7 +351,7 @@ footer a{color:var(--crema)}
         <p style="margin-top:1.6rem"><a class="btn lleno" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform">Quiero que me llames</a></p>
       </div>
       <div class="datos">
-        <div><span class="eti">Correo</span><span class="dato">finanzas.partidadoble@gmail.com</span></div>
+        <div><span class="eti">Correo</span><span class="dato">hola@finanzaspartidadoble.es</span></div>
         <div><span class="eti">Instagram</span><a class="dato" href="https://www.instagram.com/finanzas.partidadoble/">@finanzas.partidadoble</a></div>
         <div><span class="eti">Dónde</span><span class="dato">En remoto, para toda España</span></div>
       </div>
@@ -306,7 +367,7 @@ footer a{color:var(--crema)}
         <li><b>Titular:</b> Pilar C. Pérez, con el nombre comercial Partida Doble.</li>
         <li><b>NIF:</b> 12383912E</li>
         <li><b>Domicilio:</b> Paseo de Zorrilla, 24 · 47006 Valladolid</li>
-        <li><b>Correo:</b> finanzas.partidadoble@gmail.com</li>
+        <li><b>Correo:</b> hola@finanzaspartidadoble.es</li>
       </ul>
       <p><b>Información general.</b> Los consejos y listas de ayudas de esta web son orientativos y se basan en la normativa vigente cuando se publican. Para tu caso concreto, lo vemos en la primera consulta.</p>
       <p><b>Seguros.</b> La mediación de seguros la realiza un corredor de seguros inscrito en el registro de la DGSFP con la clave J3504.</p>
@@ -343,5 +404,4 @@ footer a{color:var(--crema)}
 function abrirLegal(){var d=document.getElementById(location.hash.slice(1));if(d&&d.tagName==='DETAILS'){d.open=true;d.scrollIntoView();}}
 addEventListener('hashchange',abrirLegal);abrirLegal();
 </script>
-
 </body></html>
