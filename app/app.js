@@ -40,7 +40,10 @@ document.querySelectorAll('[data-ir]').forEach(b => { b.onclick = () => ir(b.dat
 /* ------------------------------------------------ la llave */
 function leerFragmento() {
   const m = location.hash.match(/k=([A-Za-z0-9_-]{43})/);
-  if (location.hash) history.replaceState(null, '', location.pathname + location.search);  // fuera de la barra de direcciones
+  // En el navegador NO se quita: así «Añadir a pantalla de inicio» guarda el enlace con la llave
+  // (en iPhone la app del icono no comparte memoria con Safari/Chrome). Dentro de la app del icono sí se quita.
+  const enApp = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (location.hash && enApp) history.replaceState(null, '', location.pathname + location.search);
   return m ? m[1] : null;
 }
 async function usarLlave(llave) {

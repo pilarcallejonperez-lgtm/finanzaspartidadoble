@@ -1,6 +1,6 @@
 /* Papeles en orden · service worker sencillo: la app se abre al momento (y sin cobertura) con lo guardado.
    Solo guarda los archivos de la propia app; nunca toca lo que va a Supabase (otro origen) ni los datos. */
-const CACHE = 'papeles-movil-v1';
+const CACHE = 'papeles-movil-v2';
 const ARCHIVOS = ['index.html', 'estilos.css', 'app.js', 'nube.js', 'config.js', 'manifest.json',
   'icono.svg', 'icono-192.png', 'apple-touch-icon.png'];
 

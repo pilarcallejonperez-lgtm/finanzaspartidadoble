@@ -3,8 +3,6 @@
   "short_name": "Papeles",
   "description": "Tus papeles de casa, en tu móvil. Finanzas Partida Doble.",
   "lang": "es-ES",
-  "id": "/app/",
-  "start_url": "/app/",
   "scope": "/app/",
   "display": "standalone",
   "orientation": "portrait",
