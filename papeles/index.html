@@ -168,6 +168,7 @@ html.pd-cerrado #pd-candado{display:flex}
       <p><button class="btn" data-ir="subir">📎 Subir mi primer papel</button></p>
       <p><button class="enlace" data-accion="demo">O mira cómo queda con una familia de ejemplo</button></p>
     </div>
+    <div class="tarjeta" id="enDuda" hidden><h3>🤔 ¿Qué es esto?</h3><p class="gris">Dímelo una vez y lo recuerdo para la próxima.</p><div id="listaDuda"></div></div>
     <div class="tarjeta" id="porCat" hidden><h3>¿En qué se va?</h3><div id="listaCat"></div></div>
     <div class="tarjeta" id="proximos" hidden><h3>Vencimientos que vienen</h3><div id="listaVenc"></div></div>
     <div class="tarjeta" id="ultimos" hidden><h3>Lo último</h3><div id="listaUlt"></div></div>
@@ -250,14 +251,15 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 const CATS = {luz:'Luz', agua:'Agua', gas:'Gas', telefono:'Teléfono e internet', seguros:'Seguros', colegio:'Colegio',
   comunidad:'Comunidad', vivienda:'Hipoteca o alquiler', coche:'Coche', transporte:'Transporte', salud:'Salud',
   suscripciones:'Suscripciones', impuestos:'Impuestos y tasas', super:'Súper y comida', restaurantes:'Comer fuera',
-  ropa:'Ropa', compras:'Compras', ocio:'Ocio y caprichos', otros:'Otros', revisar:'Por revisar'};
+  ropa:'Ropa', compras:'Compras', ocio:'Ocio y caprichos', otros:'Otros', revisar:'Por revisar', banco:'Banco', duda:'En duda', ingreso:'Ingresos'};
+const CATS_ELEGIR = Object.keys(CATS).filter(k => !['revisar', 'banco', 'duda', 'ingreso'].includes(k));
 const ICO = {luz:'💡', agua:'🚿', gas:'🔥', telefono:'📱', seguros:'🛡️', colegio:'🎒', comunidad:'🏢', vivienda:'🏠', coche:'🚗',
   transporte:'🚌', salud:'🩺', suscripciones:'📺', impuestos:'🏛️', super:'🛒', restaurantes:'🍽️', ropa:'👗', compras:'🛍️',
-  ocio:'🎉', otros:'📄', revisar:'❓'};
+  ocio:'🎉', otros:'📄', revisar:'❓', banco:'🏦', duda:'🤔', ingreso:'💶'};
 const SIN_IMPORTE = ['poliza', 'presupuesto', 'contrato', 'garantia'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const eur = x => (x ?? 0).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const eur = x => (x ?? 0).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2, useGrouping: 'always'}) + ' €';
 const fechaTxt = f => f ? new Date(f + 'T12:00').toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'}) : '';
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 
@@ -291,11 +293,11 @@ async function lector() {
   PY = (async () => {
     await cargarScript(PYODIDE_URL + 'pyodide.js');
     const py = await loadPyodide({indexURL: PYODIDE_URL});
-    const [codigo, comercios] = await Promise.all([fetch('lector.py').then(r => r.text()), fetch('comercios_es.json').then(r => r.text())]);
+    const nombres = ['lector.py', 'banco.py', 'captura_web.py', 'comercios_es.json'];
+    const textos = await Promise.all(nombres.map(n => fetch(n, {cache: 'no-cache'}).then(r => { if (!r.ok) throw new Error(n); return r.text(); })));
     py.FS.mkdirTree('/app');
-    py.FS.writeFile('/app/lector.py', codigo);
-    py.FS.writeFile('/app/comercios_es.json', comercios);
-    py.runPython('import sys, json\nsys.path.insert(0, "/app")\nimport lector');
+    nombres.forEach((n, i) => py.FS.writeFile('/app/' + n, textos[i]));
+    py.runPython('import sys, json\nsys.path.insert(0, "/app")\nimport lector, captura_web');
     return py;
   })();
   try { return await PY; } catch (e) { PY = null; throw e; }
@@ -323,12 +325,35 @@ async function textoPDF(buf) {
   return paginas.join('\n');
 }
 let OCR = null;
-async function textoFoto(file) {
+// Prepara la imagen para leerla: en gris y, si está en modo oscuro (fondo negro), en negativo.
+async function prepararImagen(file) {
+  const bmp = await createImageBitmap(file);
+  const escala = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * escala); c.height = Math.round(bmp.height * escala);
+  const g = c.getContext('2d'); g.drawImage(bmp, 0, 0, c.width, c.height);
+  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+  let suma = 0;
+  for (let i = 0; i < d.length; i += 4) suma += (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
+  const oscura = suma / (d.length / 4) / 255 < 0.4;
+  for (let i = 0; i < d.length; i += 4) { let v = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114; if (oscura) v = 255 - v; d[i] = d[i + 1] = d[i + 2] = v; }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+async function leerFoto(file) {
   if (!OCR) OCR = cargarScript(TESSERACT_URL);
   await OCR;
-  const r = await Tesseract.recognize(file, 'spa');
-  return (r && r.data && r.data.text) || '';
+  let fuente = file; try { fuente = await prepararImagen(file); } catch (e) { /* sin canvas: la imagen tal cual */ }
+  const r = await Tesseract.recognize(fuente, 'spa');
+  const data = (r && r.data) || {};
+  const lineas = (data.lines || []).map(l => ({t: (l.text || '').trim(), x: l.bbox.x0, y: l.bbox.y0, w: l.bbox.x1 - l.bbox.x0, h: l.bbox.y1 - l.bbox.y0})).filter(l => l.t);
+  return {texto: data.text || '', lineas};
 }
+async function captura(lineas) {
+  const py = await lector();
+  py.globals.set('LINEAS', JSON.stringify(lineas)); py.globals.set('HOY', hoyISO());
+  return JSON.parse(py.runPython('captura_web.leer(LINEAS, HOY)'));
+}
+const claveMov = m => [m.fecha, m.tipo, m.importe.toFixed(2), m.divisa || 'EUR', (m.clave || '').split(' ')[0]].join('|');
 async function huella(buf) {
   const h = await crypto.subtle.digest('SHA-256', buf);
   return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -348,8 +373,37 @@ async function procesar(file) {
   const ya = await porHash(h);
   if (ya) return {repetido: true, papel: ya};
   const esPDF = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-  let texto = '';
-  try { texto = esPDF ? await textoPDF(buf.slice(0)) : await textoFoto(file); } catch (e) { console.warn(e); }
+  let texto = '', lineas = [];
+  try {
+    if (esPDF) texto = await textoPDF(buf.slice(0));
+    else { const f = await leerFoto(file); texto = f.texto; lineas = f.lineas; }
+  } catch (e) { console.warn(e); }
+  // ¿Es una captura de los movimientos del banco? → cada movimiento se apunta solo
+  if (!esPDF && lineas.length) {
+    let cap = null; try { cap = await captura(lineas); } catch (e) { console.warn('captura', e); }
+    if (cap && cap.movimientos && cap.movimientos.length) {
+      const existentes = new Set();
+      for (const q of await vivos()) for (const m of (q.movs || [])) existentes.add(claveMov(m));
+      const rec = leerRecuerdos();
+      const nuevos = [];
+      let ya = 0;
+      for (const m of cap.movimientos) {
+        const k = claveMov(m);
+        if (existentes.has(k)) { ya++; continue; }
+        existentes.add(k + '#' + nuevos.length);  // dos cafés iguales en la misma captura son dos cafés
+        if (m.tipo === 'g' && rec['c:' + m.clave]) m.categoria = rec['c:' + m.clave];
+        nuevos.push(m);
+      }
+      if (!nuevos.length) return {repetido: true, papel: {concepto: 'Captura del banco', importe: null}, todosYa: true};
+      const p = {
+        id: nuevoUUID(), hash: h, nombre: file.name, mime: file.type || 'image/png', actualizado: new Date().toISOString(), subido: false,
+        fecha: hoyISO(), emisor: '', importe: null, tipo: 'captura', categoria: 'banco', vencimiento: '',
+        concepto: 'Captura del banco', movs: nuevos, yaEstaban: ya, creado: new Date().toISOString(), demo: false, blob: new Blob([buf], {type: file.type})
+      };
+      await guardar(p); Sincro.pronto();
+      return {repetido: false, papel: p, captura: true};
+    }
+  }
   const conTexto = texto.replace(/\s/g, '').length > 20;
   let d = {fecha: '', emisor: '', nif: '', importe: null, tipo: 'otro', categoria: 'otros', vencimiento: '', concepto: ''};
   if (conTexto) d = await analizar(texto);
@@ -484,11 +538,40 @@ function ir(v) {
   if (v === 'papeles') pintarPapeles();
 }
 const esGasto = p => (p.tipo === 'factura' || p.tipo === 'recibo') && p.importe > 0 && p.categoria !== 'revisar';
+// Todos los gastos e ingresos: facturas/recibos + movimientos de las capturas del banco (en euros).
+// Un cargo del banco con el mismo importe que una factura (±5 días) es esa factura: no se cuenta dos veces.
+function apuntes(ps) {
+  const facturas = ps.filter(esGasto);
+  const out = facturas.map(p => ({fecha: p.fecha, tipo: 'g', importe: p.importe, categoria: p.categoria, concepto: p.concepto}));
+  const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 864e5);
+  for (const p of ps) for (const m of (p.movs || [])) {
+    if ((m.divisa || 'EUR') !== 'EUR') continue;
+    if (m.tipo === 'g' && facturas.some(f => Math.abs(f.importe - m.importe) < 0.01 && dias(f.fecha, m.fecha) <= 5)) continue;
+    out.push({fecha: m.fecha, tipo: m.tipo, importe: m.importe, categoria: m.categoria, concepto: m.concepto});
+  }
+  return out;
+}
+function filaMov(m) {
+  const signo = m.tipo === 'i' ? '+' : '−', mon = (m.divisa || 'EUR') === 'EUR' ? eur(m.importe) : m.importe.toFixed(2).replace('.', ',') + ' ' + m.divisa;
+  return `<div class="cat"><span>${ICO[m.categoria] || '•'} ${esc(m.concepto)} <span class="gris">· ${fechaTxt(m.fecha)}</span></span><b style="color:${m.tipo === 'i' ? 'var(--ok)' : 'inherit'}">${signo}${mon}</b></div>`;
+}
+function filaCaptura(p, conCambiar) {
+  const movs = p.movs || [], g = movs.filter(m => m.tipo === 'g').length, i = movs.length - g, dudas = movs.filter(m => m.categoria === 'duda').length;
+  return `<div class="papel">
+    <div class="ico">🏦</div>
+    <div class="txt"><b>Captura del banco</b>
+      <span class="gris">${fechaTxt(p.fecha)} · ${movs.length} movimientos (${g} gastos${i ? ', ' + i + ' ingresos' : ''})</span><br>
+      ${dudas ? `<span class="etq rev">${dudas} en duda</span>` : '<span class="etq">Apuntado</span>'}
+      ${conCambiar ? `<details style="margin-top:6px"><summary class="enlace" style="display:inline">Ver los movimientos</summary>${movs.map(filaMov).join('')}</details>
+      <button class="enlace" data-ver="${p.id}">Ver la captura</button>` : ''}
+    </div></div>`;
+}
 function filaPapel(p, conCambiar) {
+  if (p.tipo === 'captura') return filaCaptura(p, conCambiar);
   const imp = p.importe != null ? `<span class="imp">${eur(p.importe)}</span>` : '';
   const etq = p.categoria === 'revisar' ? '<span class="etq rev">Por revisar</span>' : `<span class="etq">${esc(CATS[p.categoria] || 'Otros')}</span>`;
   const sel = conCambiar ? `<div class="cambio" hidden><select class="cambiar" data-cat="${p.id}" aria-label="Categoría">${
-    Object.entries(CATS).filter(([k]) => k !== 'revisar').map(([k, n]) => `<option value="${k}" ${k === p.categoria ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>` : '';
+    CATS_ELEGIR.map(k => [k, CATS[k]]).map(([k, n]) => `<option value="${k}" ${k === p.categoria ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>` : '';
   return `<div class="papel">
     <div class="ico">${ICO[p.categoria] || '📄'}</div>
     <div class="txt"><b>${esc(p.concepto)}</b>
@@ -501,10 +584,18 @@ async function pintarInicio() {
   const ps = await vivos();
   const hoy = new Date(); const mes = hoyISO().slice(0, 7);
   $('mesTxt').textContent = 'En ' + hoy.toLocaleDateString('es-ES', {month: 'long'}) + ' llevas gastado';
-  const delMes = ps.filter(p => esGasto(p) && p.fecha.startsWith(mes));
+  const todosMes = apuntes(ps).filter(a => a.fecha.startsWith(mes));
+  const delMes = todosMes.filter(a => a.tipo === 'g'), ingMes = todosMes.filter(a => a.tipo === 'i');
   $('gastoMes').textContent = eur(delMes.reduce((s, p) => s + p.importe, 0));
-  $('gastoCuantos').textContent = delMes.length ? `En ${delMes.length} ${delMes.length === 1 ? 'factura o recibo' : 'facturas y recibos'}.` : 'Todavía no hay facturas de este mes.';
+  const ing = ingMes.reduce((s, a) => s + a.importe, 0);
+  $('gastoCuantos').textContent = (delMes.length ? `En ${delMes.length} ${delMes.length === 1 ? 'gasto' : 'gastos'}.` : 'Todavía no hay gastos de este mes.') + (ing ? ` Ingresos: ${eur(ing)}.` : '');
   $('bienvenida').hidden = ps.length > 0;
+  // Lo único que se pregunta: qué es un movimiento del banco que no sabemos (una vez por comercio)
+  const dudas = [];
+  for (const p of ps) (p.movs || []).forEach((m, i) => { if (m.categoria === 'duda') dudas.push({p, m, i}); });
+  $('enDuda').hidden = !dudas.length;
+  $('listaDuda').innerHTML = dudas.map(({p, m, i}) => `<div class="cat" style="flex-wrap:wrap"><span style="flex:1 1 180px">${esc(m.concepto)} <span class="gris">· ${fechaTxt(m.fecha)}</span><br><b>−${eur(m.importe)}</b></span>
+    <select class="cambiar" data-mov="${p.id}|${i}" aria-label="¿Qué es ${esc(m.concepto)}?"><option value="">¿Qué es?</option>${CATS_ELEGIR.map(k => `<option value="${k}">${esc(CATS[k])}</option>`).join('')}</select></div>`).join('');
   const porCat = {};
   for (const p of delMes) porCat[p.categoria] = (porCat[p.categoria] || 0) + p.importe;
   const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
@@ -543,7 +634,12 @@ $('archivos').addEventListener('change', async (ev) => {
       const r = await procesar(f);
       const p = r.papel;
       const imp = p.importe != null ? ' · ' + eur(p.importe) : '';
-      if (r.repetido) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Ya lo tenías:</b> ${esc(p.concepto)}${imp}. No lo he guardado otra vez.`; }
+      if (r.todosYa) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Captura del banco:</b> todos sus movimientos ya estaban apuntados.`; }
+      else if (r.repetido) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Ya lo tenías:</b> ${esc(p.concepto)}${imp}. No lo he guardado otra vez.`; }
+      else if (r.captura) {
+        const movs = p.movs, d = movs.filter(m => m.categoria === 'duda').length, g = movs.filter(m => m.tipo === 'g').length;
+        fila.className = 'aviso'; fila.innerHTML = `🏦 <b>Captura del banco:</b> he apuntado ${movs.length} movimientos (${g} gastos, ${movs.length - g} ingresos)${p.yaEstaban ? `; ${p.yaEstaban} ya estaban` : ''}.${d ? `<br>🤔 Hay ${d} que no sé qué son: te los pregunto en Inicio.` : ''}`;
+      }
       else if (p.categoria === 'revisar') { fila.className = 'aviso rep'; fila.innerHTML = `❓ <b>${esc(p.concepto)}</b>: no lo he podido leer del todo, lo he dejado en «Por revisar».`; }
       else { fila.className = 'aviso'; fila.innerHTML = `✓ <b>${esc(p.concepto)}${imp}</b><br><span class="gris">${esc(p.emisor)} · guardado en ${esc(CATS[p.categoria])}</span>`; }
     } catch (e) {
@@ -589,6 +685,20 @@ document.addEventListener('click', async (ev) => {
 });
 document.addEventListener('change', async (ev) => {
   const s = ev.target.closest('select.cambiar'); if (!s) return;
+  if (s.dataset.mov) {
+    if (!s.value) return;
+    const [id] = s.dataset.mov.split('|'), idx = +s.dataset.mov.split('|')[1];
+    const p = (await todos()).find(x => x.id === id); if (!p || !p.movs || !p.movs[idx]) return;
+    const clave = p.movs[idx].clave, r = leerRecuerdos(); if (clave) { r['c:' + clave] = s.value; try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {} }
+    // lo mismo para todos los movimientos de ese comercio que estén en duda
+    const ahora = new Date().toISOString();
+    for (const q of await vivos()) {
+      let cambio = false;
+      (q.movs || []).forEach((m, i) => { if (m.categoria === 'duda' && ((clave && m.clave === clave) || (q.id === id && i === idx))) { m.categoria = s.value; cambio = true; } });
+      if (cambio) { q.actualizado = ahora; await guardar(q); }
+    }
+    pintarInicio(); Sincro.pronto(); return;
+  }
   const p = (await todos()).find(x => x.id === s.dataset.cat); if (!p) return;
   p.categoria = s.value; p.actualizado = new Date().toISOString(); await guardar(p); recordar(p.emisor, p.categoria);
   pintarPapeles(); if (!p.demo) Sincro.pronto();
