@@ -80,6 +80,49 @@ select.cambiar{padding:8px;border-radius:10px;border:1px solid var(--linea);back
 </style>
 </head>
 <body>
+<!--CANDADO_INI--><style>
+html.pd-cerrado body>*:not(#pd-candado){display:none!important}
+#pd-candado{position:fixed;inset:0;z-index:99999;background:#1f4535;color:#f6efdf;display:none;align-items:center;justify-content:center;
+  padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;overflow:auto}
+html.pd-cerrado #pd-candado{display:flex}
+#pd-candado .c{max-width:440px;width:100%;text-align:center}
+#pd-candado h1{font-family:Georgia,serif;font-size:30px;line-height:1.2;margin:10px 0 12px;color:#f6efdf}
+#pd-candado p{font-size:17px;line-height:1.5;color:#e9dfc6;margin:0 0 14px}
+#pd-candado .ig{display:block;background:#c9a85c;color:#1f4535;font-weight:700;font-size:18px;padding:14px 18px;border-radius:12px;text-decoration:none;margin:18px 0}
+#pd-candado form{display:flex;gap:8px;margin-top:22px}
+#pd-candado input{flex:1;min-width:0;font-size:18px;padding:12px;border-radius:10px;border:1px solid #c9a85c;background:#fbf7ef;color:#1f2a24;text-transform:uppercase;letter-spacing:.15em;text-align:center}
+#pd-candado button{font-size:17px;font-weight:700;padding:12px 16px;border-radius:10px;border:1px solid #c9a85c;background:transparent;color:#f6efdf;cursor:pointer}
+#pd-candado .mal{color:#ffb4a8;min-height:1.4em;font-size:15px;margin-top:8px}
+#pd-candado small{display:block;margin-top:26px;color:#c9a85c;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+</style>
+<div id="pd-candado" role="dialog" aria-labelledby="pd-cand-t">
+  <div class="c">
+    <div style="font-size:44px">🔒</div>
+    <h1 id="pd-cand-t">Esta herramienta es privada</h1>
+    <p>La comparto con las personas que me lo piden. Escríbeme y te mando tu acceso personal.</p>
+    <a class="ig" href="https://ig.me/m/finanzas.partidadoble" target="_blank" rel="noopener">Pedir acceso a Mapi por Instagram</a>
+    <p>¿Ya tienes tu código? Escríbelo aquí:</p>
+    <form id="pd-cand-f" autocomplete="off"><input id="pd-cand-i" maxlength="12" aria-label="Código de acceso" placeholder="CÓDIGO"><button>Entrar</button></form>
+    <div class="mal" id="pd-cand-m" aria-live="polite"></div>
+    <small>Partida Doble · Soy tu contable</small>
+  </div>
+</div>
+<script>
+(function(){
+  var PAG='papeles', OK=["707301eff957fb91f7119fb95357417b1c98126ade4198772192869e4fc2fe19", "a9c14718bcb63c896b218fff185666f6f1632bcd819d643df1a9647b8a35899a", "d3859ba16b187d1d9b1db7213263aca7da137d13c20ccb64cbab6e5fbd371b59", "de4028c422732e8821855f19fc7123d99f1c7179c1d60cdf0694fefbf305bf81", "16462a27177136138da3e888f391c6d4b406cfccc9f1e25cafba57148f35f5b3", "bf0bccb6de8d7af9489ce388f3621cbb2ea42196722244353dafd2f3d36afbb6", "235b9e59f479bfb9035f60d07b04c409580fabc1fd2302592d3042234f3d4fac", "17506dc7f3b0065cf2d56774b4428609030c9bf275e16ba293e513b0d567892e", "636572f09aa90b55e7216da0fbfc0340f2bf4e67238a7e0285f0be95b5550a52", "41f0e0802cac9e2f6b60a78ad2766693b7017ccaa57f71195f58fb52f1fd2760", "976c2548a79f1be6bd681e7dd746f7f2ac2af059e1f064dab8e3caa43e1c0b4b", "464c1591a9ff6087e53de50cbde11cb9cb7c2d53122ed225ad273c5903891cfa", "601e155f42abd0352df0cadc078fa4675a21e8f46a55492949cade01993e08c1", "c36e1676cce8c5b3095e9e789d3fea9e798ddfd7dbc1da5a1fe8320aad842fc8", "0d1d03d5b5a2ad10b6030094168a3186faa1df02e984b78dc1e88eb4777c27cb"], CLAVE='pd_acceso_'+PAG, raiz=document.documentElement;
+  raiz.classList.add('pd-cerrado');
+  function huella(c){return crypto.subtle.digest('SHA-256',new TextEncoder().encode('pd-acceso:'+c.trim().toUpperCase())).then(function(b){return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')})}
+  function guardar(c){try{localStorage.setItem(CLAVE,c)}catch(e){}}
+  function leer(){try{return localStorage.getItem(CLAVE)||''}catch(e){return ''}}
+  function abrir(){raiz.classList.remove('pd-cerrado')}
+  function probar(c,aviso){if(!c)return Promise.resolve(false);return huella(c).then(function(x){if(OK.indexOf(x)>=0){guardar(c.trim().toUpperCase());abrir();return true}if(aviso)document.getElementById('pd-cand-m').textContent='Ese código no vale. Pídeme el tuyo por Instagram.';return false})}
+  var url=new URL(location.href), q=url.searchParams.get('c');
+  if(q){url.searchParams.delete('c');history.replaceState(null,'',url.pathname+url.search+url.hash)}
+  probar(q||leer(),false).then(function(ok){if(!ok&&q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo por Instagram.'});
+  document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();probar(document.getElementById('pd-cand-i').value,true)});
+})();
+</script>
+<!--CANDADO_FIN-->
 <header>
   <img src="icono-192.png" alt="">
   <div><b>Papeles en orden</b><small>Finanzas Partida Doble</small></div>
