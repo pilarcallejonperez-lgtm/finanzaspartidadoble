@@ -76,6 +76,19 @@ nav button.on{color:var(--verde);font-weight:700}
   animation:g 1s linear infinite;vertical-align:middle}
 @keyframes g{to{transform:rotate(360deg)}}
 select.cambiar{padding:8px;border-radius:10px;border:1px solid var(--linea);background:#fff;max-width:100%}
+.destacada{background:var(--verde);color:var(--oro-claro);border-color:var(--verde)}
+.destacada h3,.destacada .grande{color:#fff}.destacada .gris{color:var(--oro-claro)}
+.semaforo{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.barra i.ambar{background:#e0a030}.barra i.rojo{background:var(--gasto)}.barra i.verde{background:#4f9a6a}
+.campo{display:block;margin:10px 0;font-size:.95rem}
+.campo input{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:10px;border:1px solid var(--linea);background:#fff}
+table.anio{width:100%;border-collapse:collapse;font-size:.85rem}
+table.anio th,table.anio td{padding:5px 4px;text-align:right;border-bottom:1px solid var(--linea)}
+table.anio th:first-child,table.anio td:first-child{text-align:left}
+table.anio tr.prev td{color:var(--tinta-2);font-style:italic}
+.bloque summary{display:flex;justify-content:space-between;cursor:pointer;padding:10px 0;border-bottom:1px solid var(--linea);font-weight:600;list-style:none}
+.bloque summary::-webkit-details-marker{display:none}
+.scroll-x{overflow-x:auto}
 @media (min-width:900px){ main{padding-top:24px} }
 </style>
 </head>
@@ -188,6 +201,25 @@ html.pd-cerrado #pd-candado{display:flex}
     <p class="gris" style="margin-top:12px">La primera vez tarda un poco más, porque preparo el lector. Después va rápido.</p>
   </section>
 
+  <!-- MIS CUENTAS (panel de finanzas) -->
+  <section id="v-cuentas" hidden>
+    <h2>Mis cuentas</h2>
+    <div class="tarjeta destacada" id="cQueda"></div>
+    <div class="tarjeta" id="cMes"></div>
+    <div class="tarjeta" id="cTopes"></div>
+    <div class="tarjeta" id="cHormiga"></div>
+    <div class="tarjeta" id="cAnio"></div>
+    <div class="tarjeta" id="cPresu"></div>
+    <div class="tarjeta">
+      <h3>Tus números (opcional)</h3>
+      <p class="gris">Con esto afino lo que te queda y cómo acabarás el año. Si lo dejas en blanco, lo calculo yo con lo que subes.</p>
+      <label class="campo">¿Cuánto quieres ahorrar al año? <input id="cfgAhorro" type="number" inputmode="decimal" min="0" step="50" placeholder="Por ejemplo, 2400"></label>
+      <label class="campo">¿Cuánto tienes hoy en el banco? <input id="cfgSaldo" type="number" inputmode="decimal" step="10" placeholder="Por ejemplo, 3500"></label>
+      <label class="campo">¿Cuánto ganas al mes? <input id="cfgIngreso" type="number" inputmode="decimal" min="0" step="10" placeholder="Lo saco de tus nóminas"></label>
+      <p><button class="btn" data-accion="guardarCfg">Guardar</button> <span id="cfgOk" class="gris"></span></p>
+    </div>
+  </section>
+
   <!-- PAPELES -->
   <section id="v-papeles" hidden>
     <h2>Mis papeles</h2>
@@ -234,6 +266,7 @@ html.pd-cerrado #pd-candado{display:flex}
 <nav>
   <button data-ir="inicio" class="on"><span>🏠</span>Inicio</button>
   <button data-ir="subir"><span>📎</span>Subir</button>
+  <button data-ir="cuentas"><span>📊</span>Cuentas</button>
   <button data-ir="papeles"><span>📁</span>Papeles</button>
   <button data-ir="ajustes"><span>⚙️</span>Ajustes</button>
 </nav>
@@ -487,7 +520,11 @@ const Sincro = (() => {
       else if ((r.actualizado || '') > (l.actualizado || '')) { await guardar(Object.assign({}, r, {blob: l.blob, subido: l.subido})); cambios++; }
     }
     // recuerdos («¿Está mal? Cambiar»): unión
-    const rec = Object.assign({}, remoto.recuerdos || {}, leerRecuerdos());
+    const loc = leerRecuerdos(), rem = remoto.recuerdos || {};
+    const rec = Object.assign({}, rem, loc);
+    // «Tus números»: gana el guardado más reciente, venga de donde venga
+    const tCfg = s => { try { return JSON.parse(s || '{}').t || ''; } catch (e) { return ''; } };
+    if (rem._cfg && tCfg(rem._cfg) > tCfg(loc._cfg)) rec._cfg = rem._cfg;
     ls.set('recuerdos', JSON.stringify(rec));
     const nuevo = {v: 1, papeles: [...final.values()], recuerdos: rec};
     if (JSON.stringify(nuevo) !== JSON.stringify({v: 1, papeles: remoto.papeles || [], recuerdos: remoto.recuerdos || {}})) {
@@ -536,6 +573,7 @@ function ir(v) {
   window.scrollTo(0, 0);
   if (v === 'inicio') pintarInicio();
   if (v === 'papeles') pintarPapeles();
+  if (v === 'cuentas') pintarCuentas();
 }
 const esGasto = p => (p.tipo === 'factura' || p.tipo === 'recibo') && p.importe > 0 && p.categoria !== 'revisar';
 // Todos los gastos e ingresos: facturas/recibos + movimientos de las capturas del banco (en euros).
@@ -610,6 +648,111 @@ async function pintarInicio() {
   $('ultimos').hidden = !ult.length;
   $('listaUlt').innerHTML = ult.map(p => filaPapel(p, false)).join('');
 }
+/* ---------------- Mis cuentas: el panel de finanzas ----------------
+   Todo sale de lo que sube (facturas, tickets y capturas del banco). Lo único opcional: ahorro anual, saldo de hoy e ingreso. */
+const FIJOS = ['luz', 'agua', 'gas', 'telefono', 'seguros', 'colegio', 'comunidad', 'vivienda', 'suscripciones'];
+const EXTRA = ['impuestos'];
+const CON_TOPE = ['super', 'restaurantes', 'ropa', 'compras', 'ocio', 'transporte', 'coche'];
+const HORMIGA_CATS = ['restaurantes', 'ocio', 'compras', 'ropa', 'otros', 'duda', 'super'];
+const leerCfg = () => { try { return JSON.parse(leerRecuerdos()._cfg || '{}'); } catch (e) { return {}; } };
+function grupoDe(a) {
+  if (a.tipo === 'i') return 'entra';
+  if (FIJOS.includes(a.categoria)) return 'fijos';
+  if (EXTRA.includes(a.categoria) || a.importe >= 250) return 'extra';
+  return 'dia';
+}
+const NOMBRE_GRUPO = {entra: '💶 Entra', fijos: '🏠 Gastos fijos', dia: '🛒 Día a día', extra: '✨ Extraordinarios'};
+const mesDe = f => f.slice(0, 7);
+const nombreMes = (ym, largo) => new Date(ym + '-15T12:00').toLocaleDateString('es-ES', {month: largo ? 'long' : 'short'});
+function porMes(lista) { const m = {}; for (const a of lista) { const k = mesDe(a.fecha); (m[k] = m[k] || []).push(a); } return m; }
+const suma = l => l.reduce((s, a) => s + a.importe, 0);
+function mesesAntes(ym, n) { const [y, m] = ym.split('-').map(Number); const out = []; for (let i = 1; i <= n; i++) { const d = new Date(y, m - 1 - i, 15); out.push(d.toISOString().slice(0, 7)); } return out; }
+const media = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
+
+async function pintarCuentas() {
+  const ps = await vivos(), cfg = leerCfg();
+  $('cfgAhorro').value = cfg.ahorro ?? ''; $('cfgSaldo').value = cfg.saldo ?? ''; $('cfgIngreso').value = cfg.ingreso ?? '';
+  const todos_ = apuntes(ps), pm = porMes(todos_);
+  const hoy = new Date(), mes = hoyISO().slice(0, 7), anio = hoy.getFullYear();
+  const delMes = pm[mes] || [];
+  const ant = mesesAntes(mes, 3).filter(k => pm[k] && pm[k].length);  // meses anteriores con datos
+  const g = (lista, grupo) => lista.filter(a => grupoDe(a) === grupo);
+  if (!todos_.length) {
+    for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu']) $(id).hidden = true;
+    $('cQueda').innerHTML = '<h3>Aquí verás cuánto te queda</h3><p>Sube tus facturas, tickets y capturas del banco, y te digo cuánto puedes gastar este mes y esta semana, cómo vas y cómo acabarás el año.</p><p><button class="btn oro" data-ir="subir">📎 Subir</button> <button class="btn sec" style="color:#fff;border-color:#fff" data-accion="demo">Ver el ejemplo</button></p>';
+    return;
+  }
+  for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu']) $(id).hidden = false;
+  // ingreso mensual: el que ella diga, o la media de lo que entra en los meses anteriores (o este mes)
+  const ingresoAuto = ant.length ? media(ant.map(k => suma(g(pm[k], 'entra')))) : suma(g(delMes, 'entra'));
+  const ingreso = cfg.ingreso > 0 ? +cfg.ingreso : ingresoAuto;
+  // fijos previstos del mes: lo ya pagado o, si es más, la media de los meses anteriores
+  const fijosPagados = suma(g(delMes, 'fijos'));
+  const fijosPrev = Math.max(fijosPagados, ant.length ? media(ant.map(k => suma(g(pm[k], 'fijos')))) : 0);
+  const ahorroMes = cfg.ahorro > 0 ? cfg.ahorro / 12 : 0;
+  const diaGastado = suma(g(delMes, 'dia')) + suma(g(delMes, 'extra'));
+  const queda = ingreso - fijosPrev - ahorroMes - diaGastado;
+  const finMes = new Date(anio, hoy.getMonth() + 1, 0).getDate(), diasQuedan = finMes - hoy.getDate() + 1;
+  const semanas = Math.max(1, diasQuedan / 7);
+  const semana = queda / semanas;
+  const mediaDiaAnt = ant.length ? media(ant.map(k => suma(g(pm[k], 'dia')))) : 0;
+  const ritmo = mediaDiaAnt ? (suma(g(delMes, 'dia')) / hoy.getDate()) * finMes : 0;
+  let frase = '';
+  if (!ingreso) frase = 'Cuando suba una captura con tu nómina (o me digas abajo cuánto ganas), te digo cuánto te queda.';
+  else if (queda < 0) frase = 'Este mes vas por encima de lo que entra. Toca frenar un poco el día a día.';
+  else if (mediaDiaAnt && ritmo > mediaDiaAnt * 1.1) frase = `A este ritmo, el día a día acabaría en ${eur(ritmo)}, más que tu media (${eur(mediaDiaAnt)}).`;
+  else frase = 'Vas bien. Sigue así 💪';
+  $('cQueda').innerHTML = ingreso ? `<p class="gris">Este mes te quedan para gastar</p><p class="grande">${eur(Math.max(0, queda))}</p>
+    <p>Esta semana puedes gastar <b>${eur(Math.max(0, semana))}</b></p><p class="gris">${esc(frase)}</p>
+    <p class="gris" style="font-size:.8rem">Entra ${eur(ingreso)} · fijos ${eur(fijosPrev)}${ahorroMes ? ' · ahorro ' + eur(ahorroMes) : ''} · ya gastado en el día a día ${eur(diaGastado)}</p>`
+    : `<h3>Casi lo tengo</h3><p>${esc(frase)}</p>`;
+  // el mes en 4 bloques (al tocar, sus movimientos)
+  const fila = a => `<div class="cat"><span>${ICO[a.categoria] || '•'} ${esc(a.concepto || CATS[a.categoria] || '')} <span class="gris">· ${fechaTxt(a.fecha)}</span></span><b>${a.tipo === 'i' ? '+' : '−'}${eur(a.importe)}</b></div>`;
+  $('cMes').innerHTML = `<h3>${nombreMes(mes, true).replace(/^./, c => c.toUpperCase())}</h3>` + ['entra', 'fijos', 'dia', 'extra'].map(k => {
+    const l = g(delMes, k).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    return `<details class="bloque"><summary><span>${NOMBRE_GRUPO[k]}</span><span>${eur(suma(l))}</span></summary>${l.map(fila).join('') || '<p class="gris">Nada todavía.</p>'}</details>`;
+  }).join('') + `<p class="gris" style="margin-top:8px">Resultado del mes: <b>${eur(suma(g(delMes, 'entra')) - suma(delMes.filter(a => a.tipo === 'g')))}</b></p>`;
+  // topes por partida: la media de los meses anteriores (o lo que va si no hay historia)
+  const topes = CON_TOPE.map(c => {
+    const llevas = suma(delMes.filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'));
+    const tope = ant.length ? Math.round(media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'))))) : 0;
+    return {c, llevas, tope};
+  }).filter(t => t.llevas || t.tope);
+  $('cTopes').innerHTML = '<h3>¿Cómo vas en cada cosa?</h3><p class="gris">Comparado con lo que sueles gastar al mes.</p>' + (topes.map(t => {
+    const pct = t.tope ? t.llevas / t.tope : 0, clase = !t.tope ? 'verde' : pct > 1 ? 'rojo' : pct >= 0.8 ? 'ambar' : 'verde';
+    return `<div class="cat"><div style="flex:1">${ICO[t.c]} ${esc(CATS[t.c])}<div class="barra"><i class="${clase}" style="width:${Math.min(100, Math.round((t.tope ? pct : 1) * 100))}%"></i></div></div><b>${eur(t.llevas)}${t.tope ? ' <span class="gris">/ ' + eur(t.tope) + '</span>' : ''}</b></div>`;
+  }).join('') || '<p class="gris">Aún no hay gastos del día a día este mes.</p>');
+  // gastos hormiga: pequeños (≤ 15 €) del día a día
+  const hormiga = delMes.filter(a => a.tipo === 'g' && a.importe <= 15 && HORMIGA_CATS.includes(a.categoria));
+  $('cHormiga').innerHTML = `<details class="bloque"><summary><span>🐜 Gastos hormiga (de 15 € o menos)</span><span>${eur(suma(hormiga))}</span></summary>
+    <p class="gris">${hormiga.length} pequeños gastos este mes. Al año serían unos ${eur(suma(hormiga) / hoy.getDate() * 365)}.</p>${hormiga.map(fila).join('')}</details>`;
+  // el año: real hasta este mes y previsión hasta diciembre
+  const prevIng = ingreso, prevGas = ant.length ? media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g')))) : suma(delMes.filter(a => a.tipo === 'g'));
+  let filas = '', acumulado = 0, realHasta = 0;
+  for (let m = 0; m < 12; m++) {
+    const ym = `${anio}-${String(m + 1).padStart(2, '0')}`, l = pm[ym] || [];
+    const futuro = ym > mes, sinDatos = !l.length && !futuro;
+    const ing = futuro ? prevIng : suma(g(l, 'entra')), gas = futuro ? prevGas : suma(l.filter(a => a.tipo === 'g'));
+    if (sinDatos) continue;
+    const res = ing - gas; acumulado += res; if (!futuro) realHasta += res;
+    filas += `<tr class="${futuro ? 'prev' : ''}"><td>${nombreMes(ym)}</td><td>${eur(ing)}</td><td>${eur(gas)}</td><td>${eur(res)}</td></tr>`;
+  }
+  const finAnio = cfg.saldo !== undefined && cfg.saldo !== '' ? (+cfg.saldo + (acumulado - realHasta)) : null;
+  $('cAnio').innerHTML = `<h3>${anio}, mes a mes</h3><p class="gris">En cursiva, lo previsto si sigues como hasta ahora.</p>
+    <div class="scroll-x"><table class="anio"><tr><th></th><th>Entra</th><th>Sale</th><th>Queda</th></tr>${filas}</table></div>
+    <p style="margin-top:10px">${finAnio !== null ? `Si sigues así, a 31 de diciembre tendrás unos <b>${eur(finAnio)}</b> en el banco.` : `Si sigues así, este año te quedarán <b>${eur(acumulado)}</b>.`}${cfg.ahorro > 0 ? ` Tu objetivo es ahorrar ${eur(+cfg.ahorro)}: ${acumulado >= cfg.ahorro ? 'lo cumples ✅' : 'te faltan ' + eur(cfg.ahorro - acumulado)}.` : ''}</p>`;
+  // presupuesto del año que viene: lo que sueles gastar al mes en cada cosa
+  const mesesConDatos = Object.keys(pm).filter(k => k <= mes && k.startsWith(String(anio))).length || 1;
+  const porCat = {};
+  for (const a of todos_) if (a.tipo === 'g' && a.fecha.startsWith(String(anio))) porCat[a.categoria] = (porCat[a.categoria] || 0) + a.importe;
+  const presu = Object.entries(porCat).map(([c, v]) => [c, v / mesesConDatos]).sort((a, b) => b[1] - a[1]);
+  const totalMes = presu.reduce((s, [, v]) => s + v, 0);
+  $('cPresu').innerHTML = `<details class="bloque"><summary><span>📅 Presupuesto ${anio + 1}</span><span>${eur(totalMes)}/mes</span></summary>
+    <p class="gris">Lo que sueles gastar al mes en cada cosa. Se ajusta solo con lo que vas subiendo.</p>
+    ${presu.map(([c, v]) => `<div class="cat"><span>${ICO[c] || '•'} ${esc(CATS[c] || c)}</span><b>${eur(v)}/mes <span class="gris">· ${eur(v * 12)}/año</span></b></div>`).join('')}
+    <p style="margin-top:8px">Con lo que ganas${ingreso ? ` (${eur(ingreso)}/mes)` : ''}, en ${anio + 1} te quedarían unos <b>${eur((ingreso - totalMes) * 12)}</b> al año.</p></details>`;
+}
+
 async function pintarPapeles() {
   const q = claveEmisor($('buscar').value);
   let ps = (await vivos()).sort((a, b) => b.fecha.localeCompare(a.fecha));
@@ -674,6 +817,13 @@ document.addEventListener('click', async (ev) => {
     }
     $('confirmarBorrar').hidden = true; Sincro.pronto(); ir('inicio');
   }
+  if (a === 'guardarCfg') {
+    const num = id => { const v = $(id).value.trim(); return v === '' ? undefined : Math.max(id === 'cfgSaldo' ? -1e9 : 0, +v.replace(',', '.')); };
+    const r = leerRecuerdos(); r._cfg = JSON.stringify({ahorro: num('cfgAhorro'), saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), t: new Date().toISOString()});
+    try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
+    $('cfgOk').textContent = '✓ Guardado'; setTimeout(() => $('cfgOk').textContent = '', 2500);
+    Sincro.pronto(); pintarCuentas();
+  }
   if (a === 'conectar') {
     const caja = $('cajaConectar'); caja.hidden = !caja.hidden;
     if (!caja.hidden) { const e = Sincro.enlace(); $('enlaceConectar').value = e; $('qrConectar').innerHTML = QR.svg(e, 'Código para conectar otro dispositivo'); }
@@ -727,6 +877,19 @@ async function cargarDemo() {
   for (const [concepto, emisor, cat, tipo, importe, fecha] of filas) {
     await guardar({id: 'demo' + (n++), hash: 'demo' + n, nombre: '', mime: '', fecha, emisor, importe, tipo, categoria: cat, vencimiento: '',
       concepto, creado: new Date(Date.now() - n * 60000).toISOString(), demo: true, blob: null});
+  }
+  // capturas del banco de ejemplo: nómina y día a día de 3 meses (para que «Mis cuentas» se vea con vida)
+  const hoyDia = hoy.getDate();
+  for (const m of [0, 1, 2]) {
+    const tope = m === 0 ? hoyDia : 28;
+    const movs = [{fecha: dia(m, 1), tipo: 'i', importe: 1850, divisa: 'EUR', concepto: 'Nómina Empresa Ejemplo', clave: 'nomina', categoria: 'ingreso'}];
+    const dd = [['Mercadona', 'super', 62.4, 3], ['Lidl', 'super', 38.15, 9], ['Mercadona', 'super', 71.8, 16], ['Carrefour', 'super', 45.3, 23],
+      ['Cafetería La Plaza', 'restaurantes', 3.2, 4], ['Cafetería La Plaza', 'restaurantes', 2.8, 11], ['Cafetería La Plaza', 'restaurantes', 3.5, 18],
+      ['Restaurante El Patio', 'restaurantes', [42, 55, 38][m], 13], ['Zara', 'ropa', [0, 49.9, 29.95][m], 20], ['Repsol', 'coche', 55, 7],
+      ['Repsol', 'coche', 48.6, 21], ['Amazon', 'compras', 12.99, 10], ['Cine Broadway', 'ocio', 14, 25], ['Primor', 'compras', 8.5, 15]];
+    for (const [concepto, cat, imp, d] of dd) if (imp && d <= tope) movs.push({fecha: dia(m, d), tipo: 'g', importe: imp, divisa: 'EUR', concepto, clave: concepto.toLowerCase().split(' ')[0], categoria: cat});
+    await guardar({id: 'demo' + (n++), hash: 'demo' + n, nombre: '', mime: '', fecha: dia(m, Math.min(tope, 28)), emisor: '', importe: null, tipo: 'captura',
+      categoria: 'banco', vencimiento: '', concepto: 'Captura del banco', movs, creado: new Date(Date.now() - n * 60000).toISOString(), demo: true, blob: null});
   }
   await guardar({id: 'demo' + (n++), hash: 'demo' + n, nombre: '', mime: '', fecha: dia(11, 20), emisor: 'Mapfre', importe: null, tipo: 'presupuesto',
     categoria: 'seguros', vencimiento: vence(25), concepto: 'Aviso de renovación del seguro de hogar', creado: new Date(Date.now() - 99e6).toISOString(), demo: true, blob: null});
