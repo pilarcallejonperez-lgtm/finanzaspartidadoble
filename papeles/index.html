@@ -88,6 +88,10 @@ html.pd-cerrado #pd-candado{display:flex}
 #pd-candado .c{max-width:440px;width:100%;text-align:center}
 #pd-candado h1{font-family:Georgia,serif;font-size:30px;line-height:1.2;margin:10px 0 12px;color:#f6efdf}
 #pd-candado p{font-size:17px;line-height:1.5;color:#e9dfc6;margin:0 0 14px}
+#pd-candado .pide{display:grid;gap:10px;margin:18px 0 0;text-align:left}
+#pd-candado .pide input,#pd-candado .pide textarea{width:100%;font:inherit;font-size:17px;padding:12px;border-radius:10px;border:1px solid #c9a85c;background:#fbf7ef;color:#1f2a24;text-transform:none;letter-spacing:0;text-align:left}
+#pd-candado .pide .ig{margin:4px 0 0;border:0;cursor:pointer;width:100%}
+#pd-candado .pide .ok{color:#c9f0d4}
 #pd-candado .ig{display:block;background:#c9a85c;color:#1f4535;font-weight:700;font-size:18px;padding:14px 18px;border-radius:12px;text-decoration:none;margin:18px 0}
 #pd-candado form{display:flex;gap:8px;margin-top:22px}
 #pd-candado input{flex:1;min-width:0;font-size:18px;padding:12px;border-radius:10px;border:1px solid #c9a85c;background:#fbf7ef;color:#1f2a24;text-transform:uppercase;letter-spacing:.15em;text-align:center}
@@ -99,9 +103,15 @@ html.pd-cerrado #pd-candado{display:flex}
   <div class="c">
     <div style="font-size:44px">🔒</div>
     <h1 id="pd-cand-t">Esta herramienta es privada</h1>
-    <p>La comparto con las personas que me lo piden. Escríbeme y te mando tu acceso personal.</p>
-    <a class="ig" href="https://ig.me/m/finanzas.partidadoble" target="_blank" rel="noopener">Pedir acceso a Mapi por Instagram</a>
-    <p>¿Ya tienes tu código? Escríbelo aquí:</p>
+    <p>La comparto con las personas que me lo piden. Déjame tus datos y te mando tu acceso personal a tu correo.</p>
+    <form id="pd-pide" class="pide" autocomplete="on">
+      <input id="pd-pide-n" name="name" required placeholder="Tu nombre" aria-label="Tu nombre" autocomplete="name">
+      <input id="pd-pide-c" name="email" type="email" required placeholder="Tu correo" aria-label="Tu correo" autocomplete="email">
+      <textarea id="pd-pide-m" rows="2" placeholder="Mensaje (opcional)" aria-label="Mensaje (opcional)"></textarea>
+      <button class="ig" type="submit">Pedir acceso a Mapi</button>
+      <div class="mal" id="pd-pide-r" aria-live="polite"></div>
+    </form>
+    <p style="margin-top:18px">¿Ya tienes tu código? Escríbelo aquí:</p>
     <form id="pd-cand-f" autocomplete="off"><input id="pd-cand-i" maxlength="12" aria-label="Código de acceso" placeholder="CÓDIGO"><button>Entrar</button></form>
     <div class="mal" id="pd-cand-m" aria-live="polite"></div>
     <small>Partida Doble · Soy tu contable</small>
@@ -120,6 +130,19 @@ html.pd-cerrado #pd-candado{display:flex}
   if(q){url.searchParams.delete('c');history.replaceState(null,'',url.pathname+url.search+url.hash)}
   probar(q||leer(),false).then(function(ok){if(!ok&&q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo por Instagram.'});
   document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();probar(document.getElementById('pd-cand-i').value,true)});
+  // Pedir acceso: va al formulario de Google de Mapi (le llega un aviso a su Gmail)
+  var FORM='https://docs.google.com/forms/d/e/1FAIpQLSdLfdFdFOwJrK2ToUpBzywSbEXWThNwZkudjkj5t55Xgy32Ew/formResponse';
+  document.getElementById('pd-pide').addEventListener('submit',function(e){
+    e.preventDefault();
+    var n=document.getElementById('pd-pide-n').value.trim(), c=document.getElementById('pd-pide-c').value.trim(), m=document.getElementById('pd-pide-m').value.trim(), r=document.getElementById('pd-pide-r');
+    if(!n||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)){r.className='mal';r.textContent='Pon tu nombre y un correo válido, por favor.';return}
+    var b=this.querySelector('button'); b.disabled=true; b.textContent='Enviando…';
+    var datos=new URLSearchParams(); datos.append('entry.1999412123',n); datos.append('entry.1228290284',c);
+    datos.append('entry.1853228186',PAG==='papeles'?'App Papeles en orden':'Crea tu asistente personal'); datos.append('entry.795686448',m);
+    fetch(FORM,{method:'POST',mode:'no-cors',body:datos}).then(function(){
+      document.getElementById('pd-pide').innerHTML='<p class="ok" style="font-size:18px">✓ ¡Recibido, '+n.replace(/[<>&"]/g,'')+'! Te escribo a tu correo con tu acceso.</p>';
+    }).catch(function(){b.disabled=false;b.textContent='Pedir acceso a Mapi';r.className='mal';r.textContent='No se ha podido enviar. Comprueba tu conexión y vuelve a probar.'});
+  });
 })();
 </script>
 <!--CANDADO_FIN-->
