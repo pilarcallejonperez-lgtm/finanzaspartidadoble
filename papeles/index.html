@@ -164,6 +164,7 @@ html.pd-cerrado #pd-candado{display:flex}
     <div class="tarjeta" id="bienvenida" hidden>
       <h3>¡Hola! 👋</h3>
       <p>Sube tus facturas, recibos o fotos de tickets y yo los leo y los ordeno solos. No tienes que elegir nada.</p>
+      <p class="gris">Las que te llegan por correo, guárdalas en PDF y súbelas también: la app solo ve lo que tú subes.</p>
       <p><button class="btn" data-ir="subir">📎 Subir mi primer papel</button></p>
       <p><button class="enlace" data-accion="demo">O mira cómo queda con una familia de ejemplo</button></p>
     </div>
@@ -181,6 +182,7 @@ html.pd-cerrado #pd-candado{display:flex}
       <span class="gris">PDF o foto. Puedes elegir varios a la vez.</span>
       <input type="file" id="archivos" accept="application/pdf,image/*" multiple>
     </label>
+    <div class="aviso" style="margin-top:12px">📧 <b>Las facturas que te llegan por correo</b> (luz, teléfono, seguros…): ábrelas, guarda el PDF y súbelo aquí. La app no entra en tu correo: solo ve lo que tú subes.</div>
     <div id="resultados" aria-live="polite"></div>
     <p class="gris" style="margin-top:12px">La primera vez tarda un poco más, porque preparo el lector. Después va rápido.</p>
   </section>
