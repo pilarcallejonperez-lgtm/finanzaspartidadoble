@@ -152,7 +152,7 @@ html.pd-cerrado #pd-candado{display:flex}
 </header>
 
 <main>
-  <p class="prueba">🧪 <b>Versión de prueba.</b> Tus papeles se guardan solo en este móvil u ordenador: nadie más los ve.</p>
+  <p class="prueba">🧪 <b>Versión de prueba.</b> Tus papeles viajan cifrados entre tus dispositivos: solo tú puedes verlos. <span id="estadoSync" class="gris"></span></p>
 
   <!-- INICIO -->
   <section id="v-inicio">
@@ -200,15 +200,28 @@ html.pd-cerrado #pd-candado{display:flex}
       <p class="gris">Para ver cómo queda la app con papeles de verdad.</p>
       <p><button class="btn oro" data-accion="demo">Ver el ejemplo</button> <button class="btn sec" data-accion="quitarDemo">Quitar el ejemplo</button></p>
     </div>
+    <div class="tarjeta" id="tarjetaDisp">
+      <h3>Tus dispositivos</h3>
+      <p class="gris">Conecta tu móvil, tu Mac o tu ordenador y verás los mismos papeles en todos. Lo que subas en uno aparece en los demás.</p>
+      <p><button class="btn" data-accion="conectar">📲 Conectar otro dispositivo</button></p>
+      <div id="cajaConectar" hidden>
+        <p><b>En el otro dispositivo</b>, escanea este código con la cámara o abre el enlace:</p>
+        <div id="qrConectar" style="max-width:240px;background:#fff;padding:10px;border-radius:12px"></div>
+        <p style="margin-top:10px"><input id="enlaceConectar" class="buscar" readonly aria-label="Enlace para conectar"></p>
+        <p><button class="btn sec" data-accion="copiarEnlace">Copiar enlace</button></p>
+        <p class="gris">Este enlace es como una llave: compártelo solo con tus dispositivos.</p>
+      </div>
+      <p class="gris" id="sincroDetalle"></p>
+    </div>
     <div class="tarjeta">
       <h3>Ponerla en la pantalla de inicio</h3>
       <p class="gris">En el iPhone, en Safari: botón Compartir (el cuadrado con la flecha) → <b>Añadir a pantalla de inicio</b>. Te queda con su icono, como una app.</p>
     </div>
     <div class="tarjeta">
       <h3>Empezar de cero</h3>
-      <p class="gris">Borra todos los papeles de este dispositivo.</p>
+      <p class="gris">Borra todos tus papeles, en este y en tus otros dispositivos conectados.</p>
       <p><button class="btn sec" data-accion="borrarTodo">Borrar todo</button></p>
-      <p class="aviso" id="confirmarBorrar" hidden>¿Seguro? Se borran todos tus papeles de este dispositivo.
+      <p class="aviso" id="confirmarBorrar" hidden>¿Seguro? Se borran todos tus papeles en todos tus dispositivos conectados.
         <button class="btn" data-accion="borrarSi" style="margin-top:8px">Sí, borrar todo</button></p>
     </div>
     <p class="gris">¿Algo raro? Haz una captura de pantalla y mándasela a Mapi. 😊</p>
@@ -223,6 +236,9 @@ html.pd-cerrado #pd-candado{display:flex}
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="config.js"></script>
+<script src="nube.js"></script>
+<script src="qr.js"></script>
 <script>
 'use strict';
 const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
@@ -257,7 +273,8 @@ const tx = (modo) => DB.transaction('papeles', modo).objectStore('papeles');
 const todos = () => new Promise((ok, mal) => { const r = tx('readonly').getAll(); r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
 const guardar = (p) => new Promise((ok, mal) => { const r = tx('readwrite').put(p); r.onsuccess = () => ok(); r.onerror = () => mal(r.error); });
 const borrar = (id) => new Promise((ok, mal) => { const r = tx('readwrite').delete(id); r.onsuccess = () => ok(); r.onerror = () => mal(r.error); });
-const porHash = (h) => new Promise((ok, mal) => { const r = tx('readonly').index('hash').get(h); r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
+const porHash = (h) => new Promise((ok, mal) => { const r = tx('readonly').index('hash').getAll(h); r.onsuccess = () => ok((r.result || []).find(p => !p.borrado)); r.onerror = () => mal(r.error); });
+const vivos = async () => (await todos()).filter(p => !p.borrado);
 
 /* recuerdos: si cambia la categoría de un emisor, la próxima vez va ahí sola */
 const leerRecuerdos = () => { try { return JSON.parse(localStorage.getItem('recuerdos') || '{}'); } catch (e) { return {}; } };
@@ -340,14 +357,121 @@ async function procesar(file) {
   if (rec) cat = rec;
   if (!segura) cat = 'revisar';
   const p = {
-    id: h.slice(0, 16) + Date.now().toString(36), hash: h, nombre: file.name, mime: file.type || (esPDF ? 'application/pdf' : 'image/jpeg'),
+    id: nuevoUUID(), hash: h, nombre: file.name, mime: file.type || (esPDF ? 'application/pdf' : 'image/jpeg'),
+    actualizado: new Date().toISOString(), subido: false,
     fecha: d.fecha || hoyISO(), emisor: d.emisor || '', importe: d.importe ?? null, tipo: d.tipo || 'otro', categoria: cat,
     vencimiento: d.vencimiento || '', concepto: d.concepto || (esPDF ? 'Documento' : 'Foto'),
     creado: new Date().toISOString(), demo: false, blob: new Blob([buf], {type: file.type})
   };
   await guardar(p);
+  Sincro.pronto();
   return {repetido: false, papel: p};
 }
+
+/* ---------------- sincronización cifrada entre dispositivos ----------------
+   Cada persona tiene una llave (32 bytes) que solo está en sus dispositivos. En la nube (Supabase Storage) se guardan:
+   <SHA-256 de la llave>/resumen.enc  → la lista de papeles (JSON cifrado)
+   <SHA-256 de la llave>/buzon/<id>.enc → cada archivo (cifrado). El servidor nunca ve ni la llave ni el contenido. */
+function nuevoUUID() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const x = [...b].map(v => v.toString(16).padStart(2, '0')).join('');
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
+}
+const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const Sincro = (() => {
+  const CFG = window.PAPELES_MOVIL || {};
+  const nube = Nube.almacen({url: CFG.supabaseUrl, anon: CFG.anonKey, bucket: CFG.bucket || 'papeles'});
+  const ls = {get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }};
+  let llave = ls.get('pd_llave'), corriendo = false, otraVez = false, temporizador = null, ultima = null;
+  if (!Nube.llaveValida(llave)) { llave = Nube.nuevaLlave(); ls.set('pd_llave', llave); }
+  // ¿venimos de «Conectar otro dispositivo»? (#k=…)
+  const deEnlace = Nube.llaveDeTexto(location.hash);
+  let recienConectado = false;
+  if (deEnlace && deEnlace !== llave) { llave = deEnlace; ls.set('pd_llave', llave); recienConectado = true; }
+  if (deEnlace) history.replaceState(null, '', location.pathname + location.search);
+  const meta = p => { const m = Object.assign({}, p); delete m.blob; delete m.subido; return m; };
+  const ruta = async (sub) => (await Nube.carpeta(llave)) + '/' + sub;
+  const estado = (t) => { const e = $('estadoSync'); if (e) e.textContent = t; const d = $('sincroDetalle'); if (d) d.textContent = t; };
+
+  async function bajarResumen() {
+    try { return await Nube.descifrarJSON(llave, await nube.bajar(await ruta('resumen.enc')), 'resumen'); }
+    catch (e) { if (e.noExiste) return {v: 1, papeles: [], recuerdos: {}}; throw e; }
+  }
+  async function una() {
+    const remoto = await bajarResumen();
+    const locales = (await todos()).filter(p => !p.demo);
+    const porId = new Map(locales.map(p => [p.id, p]));
+    const final = new Map();
+    for (const r of (remoto.papeles || [])) final.set(r.id, r);
+    // lo local manda si es más nuevo
+    for (const p of locales) {
+      const r = final.get(p.id);
+      if (!r || (p.actualizado || '') > (r.actualizado || '')) final.set(p.id, meta(p));
+    }
+    // subir archivos que aún no están en la nube
+    for (const p of locales) {
+      if (p.borrado || p.subido || !p.blob || !RE_UUID.test(p.id)) continue;
+      const bytes = new Uint8Array(await p.blob.arrayBuffer());
+      const paquete = Nube.empaquetar({nombre: p.nombre, mime: p.mime}, bytes);
+      try { await nube.subir(await ruta('buzon/' + p.id + '.enc'), await Nube.cifrar(llave, paquete, 'buzon'), true); }
+      catch (e) { throw e; }
+      p.subido = true; await guardar(p);
+    }
+    // guardar en este dispositivo lo que llega de los otros
+    let cambios = 0;
+    for (const [id, r] of final) {
+      const l = porId.get(id);
+      if (r.borrado) {
+        if (l && !l.borrado) { await guardar(Object.assign({}, r, {blob: null, subido: true})); cambios++; }
+        else if (!l) { await guardar(Object.assign({}, r, {blob: null, subido: true})); }
+        continue;
+      }
+      if (!l) { await guardar(Object.assign({}, r, {blob: null, subido: true})); cambios++; }
+      else if ((r.actualizado || '') > (l.actualizado || '')) { await guardar(Object.assign({}, r, {blob: l.blob, subido: l.subido})); cambios++; }
+    }
+    // recuerdos («¿Está mal? Cambiar»): unión
+    const rec = Object.assign({}, remoto.recuerdos || {}, leerRecuerdos());
+    ls.set('recuerdos', JSON.stringify(rec));
+    const nuevo = {v: 1, papeles: [...final.values()], recuerdos: rec};
+    if (JSON.stringify(nuevo) !== JSON.stringify({v: 1, papeles: remoto.papeles || [], recuerdos: remoto.recuerdos || {}})) {
+      await nube.subir(await ruta('resumen.enc'), await Nube.cifrarJSON(llave, nuevo, 'resumen'), true);
+    }
+    // archivos de papeles borrados: fuera de la nube
+    const fuera = [...final.values()].filter(r => r.borrado && RE_UUID.test(r.id)).map(r => r.id);
+    if (fuera.length) { const c = await Nube.carpeta(llave); try { await nube.borrar(fuera.map(id => c + '/buzon/' + id + '.enc')); } catch (e) {} }
+    return cambios;
+  }
+  async function sincronizar() {
+    if (corriendo) { otraVez = true; return; }
+    if (!navigator.onLine) { estado('· Sin conexión: se sincroniza al volver.'); return; }
+    corriendo = true;
+    try {
+      const cambios = await una();
+      ultima = new Date();
+      estado('· Sincronizado ' + ultima.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) + '.');
+      if (cambios) { const v = [...document.querySelectorAll('main > section')].find(s => !s.hidden); if (v && v.id === 'v-inicio') pintarInicio(); if (v && v.id === 'v-papeles') pintarPapeles(); }
+    } catch (e) { console.warn('sincro', e); estado('· No he podido sincronizar ahora; lo vuelvo a intentar.'); }
+    finally { corriendo = false; if (otraVez) { otraVez = false; setTimeout(sincronizar, 500); } }
+  }
+  function pronto() { clearTimeout(temporizador); temporizador = setTimeout(sincronizar, 400); }
+  async function archivo(p) {
+    if (p.blob) return p.blob;
+    const bytes = await Nube.descifrar(llave, await nube.bajar(await ruta('buzon/' + p.id + '.enc')), 'buzon');
+    const {ficha, archivo: datos} = Nube.desempaquetar(bytes);
+    p.blob = new Blob([datos], {type: ficha.mime || p.mime || 'application/octet-stream'}); p.subido = true;
+    await guardar(p);
+    return p.blob;
+  }
+  function enlace() {
+    let c = ''; try { c = localStorage.getItem('pd_acceso_papeles') || ''; } catch (e) {}
+    return location.origin + location.pathname + (c ? '?c=' + encodeURIComponent(c) : '') + '#k=' + llave;
+  }
+  setInterval(() => { if (document.visibilityState === 'visible') sincronizar(); }, 20000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sincronizar(); });
+  window.addEventListener('online', sincronizar);
+  return {sincronizar, pronto, archivo, enlace, recienConectado: () => recienConectado};
+})();
 
 /* ---------------- pantallas ---------------- */
 function ir(v) {
@@ -367,12 +491,12 @@ function filaPapel(p, conCambiar) {
     <div class="ico">${ICO[p.categoria] || '📄'}</div>
     <div class="txt"><b>${esc(p.concepto)}</b>
       <span class="gris">${esc([p.emisor, fechaTxt(p.fecha)].filter(Boolean).join(' · '))}</span><br>${etq}${p.demo ? ' <span class="etq">ejemplo</span>' : ''}
-      ${conCambiar ? `<br>${p.blob ? `<button class="enlace" data-ver="${p.id}">Verlo</button> · ` : ''}<button class="enlace" data-mostrar="${p.id}">¿Está mal? Cambiar</button>` : ''}
+      ${conCambiar ? `<br>${(p.blob || !p.demo) ? `<button class="enlace" data-ver="${p.id}">Verlo</button> · ` : ''}<button class="enlace" data-mostrar="${p.id}">¿Está mal? Cambiar</button>` : ''}
       ${sel}
     </div>${imp}</div>`;
 }
 async function pintarInicio() {
-  const ps = await todos();
+  const ps = await vivos();
   const hoy = new Date(); const mes = hoyISO().slice(0, 7);
   $('mesTxt').textContent = 'En ' + hoy.toLocaleDateString('es-ES', {month: 'long'}) + ' llevas gastado';
   const delMes = ps.filter(p => esGasto(p) && p.fecha.startsWith(mes));
@@ -395,7 +519,7 @@ async function pintarInicio() {
 }
 async function pintarPapeles() {
   const q = claveEmisor($('buscar').value);
-  let ps = (await todos()).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  let ps = (await vivos()).sort((a, b) => b.fecha.localeCompare(a.fecha));
   if (q) ps = ps.filter(p => claveEmisor([p.concepto, p.emisor, CATS[p.categoria]].join(' ')).includes(q));
   if (!ps.length) { $('listaPapeles').innerHTML = `<p class="gris">${q ? 'No encuentro nada con eso.' : 'Todavía no hay papeles. Sube el primero desde «Subir».'}</p>`; return; }
   const grupos = {};
@@ -431,25 +555,47 @@ $('archivos').addEventListener('change', async (ev) => {
 document.addEventListener('click', async (ev) => {
   const b = ev.target.closest('button'); if (!b) return;
   if (b.dataset.ir) return ir(b.dataset.ir);
-  if (b.dataset.ver) { const p = (await todos()).find(x => x.id === b.dataset.ver); if (p && p.blob) window.open(URL.createObjectURL(p.blob), '_blank'); return; }
+  if (b.dataset.ver) {
+    const p = (await todos()).find(x => x.id === b.dataset.ver); if (!p) return;
+    const ventana = p.blob ? null : window.open('', '_blank');  // Safari: abrir la ventana en el mismo toque
+    const txt = b.textContent; b.textContent = 'Abriendo…';
+    try { const blob = await Sincro.archivo(p); const url = URL.createObjectURL(blob); if (ventana) ventana.location = url; else window.open(url, '_blank'); }
+    catch (e) { if (ventana) ventana.close(); b.textContent = 'No lo he podido abrir'; setTimeout(() => b.textContent = txt, 3000); return; }
+    b.textContent = txt; return;
+  }
   if (b.dataset.mostrar) { const c = b.parentElement.querySelector('.cambio'); if (c) c.hidden = !c.hidden; return; }
   const a = b.dataset.accion;
   if (a === 'demo') { await cargarDemo(); ir('inicio'); }
   if (a === 'quitarDemo') { for (const p of await todos()) if (p.demo) await borrar(p.id); ir('inicio'); }
   if (a === 'borrarTodo') $('confirmarBorrar').hidden = false;
-  if (a === 'borrarSi') { for (const p of await todos()) await borrar(p.id); try { localStorage.removeItem('recuerdos'); } catch (e) {} $('confirmarBorrar').hidden = true; ir('inicio'); }
+  if (a === 'borrarSi') {
+    const ahora = new Date().toISOString();
+    for (const p of await todos()) {
+      if (p.demo) await borrar(p.id);
+      else await guardar({id: p.id, hash: p.hash, borrado: true, actualizado: ahora, fecha: p.fecha, creado: p.creado, blob: null, subido: true});
+    }
+    $('confirmarBorrar').hidden = true; Sincro.pronto(); ir('inicio');
+  }
+  if (a === 'conectar') {
+    const caja = $('cajaConectar'); caja.hidden = !caja.hidden;
+    if (!caja.hidden) { const e = Sincro.enlace(); $('enlaceConectar').value = e; $('qrConectar').innerHTML = QR.svg(e, 'Código para conectar otro dispositivo'); }
+  }
+  if (a === 'copiarEnlace') {
+    const e = $('enlaceConectar'); try { await navigator.clipboard.writeText(e.value); b.textContent = '✓ Copiado'; } catch (err) { e.select(); b.textContent = 'Selecciónalo y copia'; }
+    setTimeout(() => b.textContent = 'Copiar enlace', 2500);
+  }
 });
 document.addEventListener('change', async (ev) => {
   const s = ev.target.closest('select.cambiar'); if (!s) return;
   const p = (await todos()).find(x => x.id === s.dataset.cat); if (!p) return;
-  p.categoria = s.value; await guardar(p); recordar(p.emisor, p.categoria);
-  pintarPapeles();
+  p.categoria = s.value; p.actualizado = new Date().toISOString(); await guardar(p); recordar(p.emisor, p.categoria);
+  pintarPapeles(); if (!p.demo) Sincro.pronto();
 });
 $('buscar').addEventListener('input', pintarPapeles);
 
 /* ---------------- familia de ejemplo ---------------- */
 async function cargarDemo() {
-  const ya = await todos(); if (ya.some(p => p.demo)) return;
+  const ya = await vivos(); if (ya.some(p => p.demo)) return;
   const hoy = new Date();
   const dia = (mesAtras, d) => { const x = new Date(hoy.getFullYear(), hoy.getMonth() - mesAtras, d, 12); return x.toISOString().slice(0, 10); };
   const vence = (dias) => { const x = new Date(); x.setDate(x.getDate() + dias); return x.toISOString().slice(0, 10); };
@@ -478,6 +624,8 @@ async function cargarDemo() {
 (async () => {
   try { await abrirDB(); } catch (e) { document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso mal">Este navegador no me deja guardar. Prueba en Safari o Chrome normal (no en modo privado).</p>'); return; }
   ir('inicio');
+  if (Sincro.recienConectado()) document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">✓ <b>Dispositivo conectado.</b> Desde ahora ves aquí los mismos papeles que en tus otros dispositivos.</p>');
+  Sincro.sincronizar();
   // preparo el lector en segundo plano para que la primera subida vaya más rápida
   const despues = window.requestIdleCallback || ((f) => setTimeout(f, 2500));
   despues(() => lector().catch(() => {}));
