@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Papeles en orden</title>
+<meta name="description" content="Papeles en orden · Finanzas Partida Doble. Sube tus facturas y se ordenan solas.">
+<meta name="theme-color" content="#1f4535">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mis papeles">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icono-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --verde:#1f4535; --verde-2:#2a5a46; --verde-claro:#e3ebe5;
+  --oro:#c9a85c; --oro-claro:#f1e4c2;
+  --fondo:#f3ecdf; --papel:#fbf7ef; --linea:#dccfb4; --tinta:#1f2a24; --tinta-2:#5b5446;
+  --gasto:#b3322b; --aviso:#a8741a; --ok:#1e7a46;
+  --f-tit: Georgia, 'Times New Roman', serif;
+  --f-txt: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --nav:68px; color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fondo);color:var(--tinta);font-family:var(--f-txt);font-size:18px;line-height:1.45;
+  padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 8px);overflow-x:hidden}
+h1,h2,h3{font-family:var(--f-tit);font-weight:600;color:var(--verde);margin:0 0 .6rem;line-height:1.2}
+h2{font-size:1.45rem} h3{font-size:1.1rem}
+p{margin:.3rem 0 .6rem}
+button,input,select{font:inherit;color:inherit}
+input,select{font-size:max(16px,1rem)}
+[hidden]{display:none!important}
+header{background:var(--verde);color:var(--oro-claro);padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:20}
+header img{width:36px;height:36px;border-radius:9px}
+header b{font-family:var(--f-tit);font-size:1.25rem}
+header small{display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--oro)}
+main{padding:16px;max-width:760px;margin:0 auto}
+.prueba{background:var(--oro-claro);border:1px solid var(--oro);border-radius:12px;padding:8px 12px;font-size:.85rem;margin-bottom:14px}
+.tarjeta{background:var(--papel);border:1px solid var(--linea);border-radius:14px;padding:16px;margin-bottom:14px}
+.grande{font-family:var(--f-tit);font-size:2.2rem;color:var(--verde);margin:.1rem 0}
+.gris{color:var(--tinta-2);font-size:.9rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 18px;border-radius:12px;
+  border:0;background:var(--verde);color:#fff;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.oro{background:var(--oro);color:var(--verde)} .btn.sec{background:transparent;border:1px solid var(--verde);color:var(--verde)}
+.btn.ancho{width:100%}
+.subir{display:block;text-align:center;border:2px dashed var(--oro);border-radius:16px;padding:28px 16px;background:var(--papel);cursor:pointer}
+.subir b{display:block;font-family:var(--f-tit);font-size:1.3rem;color:var(--verde);margin:.4rem 0}
+.subir input{position:absolute;width:1px;height:1px;opacity:0}
+.cat{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--linea)}
+.cat:last-child{border-bottom:0}
+.barra{height:6px;background:var(--verde-claro);border-radius:3px;margin-top:4px}
+.barra i{display:block;height:100%;background:var(--oro);border-radius:3px}
+.papel{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--linea)}
+.papel:last-child{border-bottom:0}
+.papel .ico{flex:none;width:40px;height:40px;border-radius:10px;background:var(--verde-claro);display:grid;place-items:center;font-size:1.2rem}
+.papel .txt{flex:1;min-width:0}
+.papel .txt b{display:block;overflow-wrap:anywhere}
+.papel .imp{font-weight:700;white-space:nowrap}
+.enlace{background:none;border:0;padding:6px 0;color:var(--verde);text-decoration:underline;cursor:pointer;font-size:.9rem;min-height:36px}
+.etq{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:9px;background:var(--verde-claro);color:var(--verde)}
+.etq.rev{background:#f6e1c0;color:var(--aviso)}
+.aviso{padding:10px 12px;border-radius:12px;margin:8px 0;background:var(--verde-claro)}
+.aviso.mal{background:#f7dcd9;color:var(--gasto)}
+.aviso.rep{background:var(--oro-claro)}
+.buscar{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--linea);background:#fff;margin-bottom:12px}
+h3.grupo{margin-top:14px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--papel);border-top:1px solid var(--linea);display:flex;
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:30}
+nav button{flex:1;min-height:var(--nav);border:0;background:none;font-size:.8rem;color:var(--tinta-2);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;cursor:pointer}
+nav button span{font-size:1.4rem}
+nav button.on{color:var(--verde);font-weight:700}
+.cargando{display:inline-block;width:18px;height:18px;border:3px solid var(--oro-claro);border-top-color:var(--verde);border-radius:50%;
+  animation:g 1s linear infinite;vertical-align:middle}
+@keyframes g{to{transform:rotate(360deg)}}
+select.cambiar{padding:8px;border-radius:10px;border:1px solid var(--linea);background:#fff;max-width:100%}
+@media (min-width:900px){ main{padding-top:24px} }
+</style>
+</head>
+<body>
+<header>
+  <img src="icono-192.png" alt="">
+  <div><b>Papeles en orden</b><small>Finanzas Partida Doble</small></div>
+</header>
+
+<main>
+  <p class="prueba">🧪 <b>Versión de prueba.</b> Tus papeles se guardan solo en este móvil u ordenador: nadie más los ve.</p>
+
+  <!-- INICIO -->
+  <section id="v-inicio">
+    <div class="tarjeta">
+      <p class="gris" id="mesTxt">Este mes has gastado</p>
+      <p class="grande" id="gastoMes">0,00 €</p>
+      <p class="gris" id="gastoCuantos"></p>
+    </div>
+    <div class="tarjeta" id="bienvenida" hidden>
+      <h3>¡Hola! 👋</h3>
+      <p>Sube tus facturas, recibos o fotos de tickets y yo los leo y los ordeno solos. No tienes que elegir nada.</p>
+      <p><button class="btn" data-ir="subir">📎 Subir mi primer papel</button></p>
+      <p><button class="enlace" data-accion="demo">O mira cómo queda con una familia de ejemplo</button></p>
+    </div>
+    <div class="tarjeta" id="porCat" hidden><h3>¿En qué se va?</h3><div id="listaCat"></div></div>
+    <div class="tarjeta" id="proximos" hidden><h3>Vencimientos que vienen</h3><div id="listaVenc"></div></div>
+    <div class="tarjeta" id="ultimos" hidden><h3>Lo último</h3><div id="listaUlt"></div></div>
+  </section>
+
+  <!-- SUBIR -->
+  <section id="v-subir" hidden>
+    <h2>Subir papeles</h2>
+    <label class="subir">
+      <span style="font-size:2.4rem">📎</span>
+      <b>Toca para subir una factura o una foto</b>
+      <span class="gris">PDF o foto. Puedes elegir varios a la vez.</span>
+      <input type="file" id="archivos" accept="application/pdf,image/*" multiple>
+    </label>
+    <div id="resultados" aria-live="polite"></div>
+    <p class="gris" style="margin-top:12px">La primera vez tarda un poco más, porque preparo el lector. Después va rápido.</p>
+  </section>
+
+  <!-- PAPELES -->
+  <section id="v-papeles" hidden>
+    <h2>Mis papeles</h2>
+    <input class="buscar" id="buscar" type="search" placeholder="Buscar: luz, Iberdrola, colegio…" aria-label="Buscar">
+    <div id="listaPapeles"></div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="v-ajustes" hidden>
+    <h2>Ajustes</h2>
+    <div class="tarjeta">
+      <h3>Familia de ejemplo</h3>
+      <p class="gris">Para ver cómo queda la app con papeles de verdad.</p>
+      <p><button class="btn oro" data-accion="demo">Ver el ejemplo</button> <button class="btn sec" data-accion="quitarDemo">Quitar el ejemplo</button></p>
+    </div>
+    <div class="tarjeta">
+      <h3>Ponerla en la pantalla de inicio</h3>
+      <p class="gris">En el iPhone, en Safari: botón Compartir (el cuadrado con la flecha) → <b>Añadir a pantalla de inicio</b>. Te queda con su icono, como una app.</p>
+    </div>
+    <div class="tarjeta">
+      <h3>Empezar de cero</h3>
+      <p class="gris">Borra todos los papeles de este dispositivo.</p>
+      <p><button class="btn sec" data-accion="borrarTodo">Borrar todo</button></p>
+      <p class="aviso" id="confirmarBorrar" hidden>¿Seguro? Se borran todos tus papeles de este dispositivo.
+        <button class="btn" data-accion="borrarSi" style="margin-top:8px">Sí, borrar todo</button></p>
+    </div>
+    <p class="gris">¿Algo raro? Haz una captura de pantalla y mándasela a Mapi. 😊</p>
+  </section>
+</main>
+
+<nav>
+  <button data-ir="inicio" class="on"><span>🏠</span>Inicio</button>
+  <button data-ir="subir"><span>📎</span>Subir</button>
+  <button data-ir="papeles"><span>📁</span>Papeles</button>
+  <button data-ir="ajustes"><span>⚙️</span>Ajustes</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+'use strict';
+const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const CATS = {luz:'Luz', agua:'Agua', gas:'Gas', telefono:'Teléfono e internet', seguros:'Seguros', colegio:'Colegio',
+  comunidad:'Comunidad', vivienda:'Hipoteca o alquiler', coche:'Coche', transporte:'Transporte', salud:'Salud',
+  suscripciones:'Suscripciones', impuestos:'Impuestos y tasas', super:'Súper y comida', restaurantes:'Comer fuera',
+  ropa:'Ropa', compras:'Compras', ocio:'Ocio y caprichos', otros:'Otros', revisar:'Por revisar'};
+const ICO = {luz:'💡', agua:'🚿', gas:'🔥', telefono:'📱', seguros:'🛡️', colegio:'🎒', comunidad:'🏢', vivienda:'🏠', coche:'🚗',
+  transporte:'🚌', salud:'🩺', suscripciones:'📺', impuestos:'🏛️', super:'🛒', restaurantes:'🍽️', ropa:'👗', compras:'🛍️',
+  ocio:'🎉', otros:'📄', revisar:'❓'};
+const SIN_IMPORTE = ['poliza', 'presupuesto', 'contrato', 'garantia'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const eur = x => (x ?? 0).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const fechaTxt = f => f ? new Date(f + 'T12:00').toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'}) : '';
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+
+/* ---------------- almacén (IndexedDB, en este dispositivo) ---------------- */
+let DB;
+function abrirDB() {
+  return new Promise((ok, mal) => {
+    const r = indexedDB.open('papeles-en-orden', 1);
+    r.onupgradeneeded = () => { const s = r.result.createObjectStore('papeles', {keyPath: 'id'}); s.createIndex('hash', 'hash'); };
+    r.onsuccess = () => { DB = r.result; ok(); };
+    r.onerror = () => mal(r.error);
+  });
+}
+const tx = (modo) => DB.transaction('papeles', modo).objectStore('papeles');
+const todos = () => new Promise((ok, mal) => { const r = tx('readonly').getAll(); r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
+const guardar = (p) => new Promise((ok, mal) => { const r = tx('readwrite').put(p); r.onsuccess = () => ok(); r.onerror = () => mal(r.error); });
+const borrar = (id) => new Promise((ok, mal) => { const r = tx('readwrite').delete(id); r.onsuccess = () => ok(); r.onerror = () => mal(r.error); });
+const porHash = (h) => new Promise((ok, mal) => { const r = tx('readonly').index('hash').get(h); r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
+
+/* recuerdos: si cambia la categoría de un emisor, la próxima vez va ahí sola */
+const leerRecuerdos = () => { try { return JSON.parse(localStorage.getItem('recuerdos') || '{}'); } catch (e) { return {}; } };
+const claveEmisor = e => (e || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+function recordar(emisor, cat) { const k = claveEmisor(emisor); if (!k) return; const r = leerRecuerdos(); r[k] = cat; try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {} }
+
+/* ---------------- el lector (el mismo de la app del ordenador, en el navegador) ---------------- */
+let PY = null;
+function cargarScript(src) { return new Promise((ok, mal) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => mal(new Error('No he podido cargar ' + src)); document.head.appendChild(s); }); }
+async function lector() {
+  if (PY) return PY;
+  PY = (async () => {
+    await cargarScript(PYODIDE_URL + 'pyodide.js');
+    const py = await loadPyodide({indexURL: PYODIDE_URL});
+    const [codigo, comercios] = await Promise.all([fetch('lector.py').then(r => r.text()), fetch('comercios_es.json').then(r => r.text())]);
+    py.FS.mkdirTree('/app');
+    py.FS.writeFile('/app/lector.py', codigo);
+    py.FS.writeFile('/app/comercios_es.json', comercios);
+    py.runPython('import sys, json\nsys.path.insert(0, "/app")\nimport lector');
+    return py;
+  })();
+  try { return await PY; } catch (e) { PY = null; throw e; }
+}
+async function analizar(texto) {
+  const py = await lector();
+  py.globals.set('TEXTO', texto);
+  return JSON.parse(py.runPython('json.dumps(lector.analizar_texto(TEXTO), ensure_ascii=False)'));
+}
+async function textoPDF(buf) {
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  const paginas = [];
+  for (let n = 1; n <= Math.min(4, pdf.numPages); n++) {
+    const tc = await (await pdf.getPage(n)).getTextContent();
+    const items = tc.items.filter(i => i.str && i.str.trim()).map(i => ({s: i.str, x: i.transform[4], y: i.transform[5]}));
+    items.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+    const lineas = []; let actual = [], y = null;
+    for (const it of items) {
+      if (y !== null && Math.abs(it.y - y) > 3) { lineas.push(actual.sort((a, b) => a.x - b.x).map(i => i.s).join(' ')); actual = []; }
+      actual.push(it); y = it.y;
+    }
+    if (actual.length) lineas.push(actual.sort((a, b) => a.x - b.x).map(i => i.s).join(' '));
+    paginas.push(lineas.join('\n'));
+  }
+  return paginas.join('\n');
+}
+let OCR = null;
+async function textoFoto(file) {
+  if (!OCR) OCR = cargarScript(TESSERACT_URL);
+  await OCR;
+  const r = await Tesseract.recognize(file, 'spa');
+  return (r && r.data && r.data.text) || '';
+}
+async function huella(buf) {
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function lecturaSegura(d, conTexto) {
+  if (!conTexto || !d.emisor) return false;
+  const sinImp = SIN_IMPORTE.includes(d.tipo);
+  if (!d.fecha) return sinImp && d.importe == null && d.categoria && d.categoria !== 'otros';
+  if (d.importe == null) return sinImp;
+  return true;
+}
+const TIPO_CORTO = {factura:'Factura', recibo:'Recibo', poliza:'Póliza', presupuesto:'Presupuesto', contrato:'Contrato', garantia:'Garantía', otro:'Documento'};
+
+async function procesar(file) {
+  const buf = await file.arrayBuffer();
+  const h = await huella(buf);
+  const ya = await porHash(h);
+  if (ya) return {repetido: true, papel: ya};
+  const esPDF = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  let texto = '';
+  try { texto = esPDF ? await textoPDF(buf.slice(0)) : await textoFoto(file); } catch (e) { console.warn(e); }
+  const conTexto = texto.replace(/\s/g, '').length > 20;
+  let d = {fecha: '', emisor: '', nif: '', importe: null, tipo: 'otro', categoria: 'otros', vencimiento: '', concepto: ''};
+  if (conTexto) d = await analizar(texto);
+  const segura = lecturaSegura(d, conTexto);
+  let cat = d.categoria || 'otros';
+  const rec = leerRecuerdos()[claveEmisor(d.emisor)];
+  if (rec) cat = rec;
+  if (!segura) cat = 'revisar';
+  const p = {
+    id: h.slice(0, 16) + Date.now().toString(36), hash: h, nombre: file.name, mime: file.type || (esPDF ? 'application/pdf' : 'image/jpeg'),
+    fecha: d.fecha || hoyISO(), emisor: d.emisor || '', importe: d.importe ?? null, tipo: d.tipo || 'otro', categoria: cat,
+    vencimiento: d.vencimiento || '', concepto: d.concepto || (esPDF ? 'Documento' : 'Foto'),
+    creado: new Date().toISOString(), demo: false, blob: new Blob([buf], {type: file.type})
+  };
+  await guardar(p);
+  return {repetido: false, papel: p};
+}
+
+/* ---------------- pantallas ---------------- */
+function ir(v) {
+  for (const s of document.querySelectorAll('main > section')) s.hidden = s.id !== 'v-' + v;
+  for (const b of document.querySelectorAll('nav button')) b.classList.toggle('on', b.dataset.ir === v);
+  window.scrollTo(0, 0);
+  if (v === 'inicio') pintarInicio();
+  if (v === 'papeles') pintarPapeles();
+}
+const esGasto = p => (p.tipo === 'factura' || p.tipo === 'recibo') && p.importe > 0 && p.categoria !== 'revisar';
+function filaPapel(p, conCambiar) {
+  const imp = p.importe != null ? `<span class="imp">${eur(p.importe)}</span>` : '';
+  const etq = p.categoria === 'revisar' ? '<span class="etq rev">Por revisar</span>' : `<span class="etq">${esc(CATS[p.categoria] || 'Otros')}</span>`;
+  const sel = conCambiar ? `<div class="cambio" hidden><select class="cambiar" data-cat="${p.id}" aria-label="Categoría">${
+    Object.entries(CATS).filter(([k]) => k !== 'revisar').map(([k, n]) => `<option value="${k}" ${k === p.categoria ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>` : '';
+  return `<div class="papel">
+    <div class="ico">${ICO[p.categoria] || '📄'}</div>
+    <div class="txt"><b>${esc(p.concepto)}</b>
+      <span class="gris">${esc([p.emisor, fechaTxt(p.fecha)].filter(Boolean).join(' · '))}</span><br>${etq}${p.demo ? ' <span class="etq">ejemplo</span>' : ''}
+      ${conCambiar ? `<br>${p.blob ? `<button class="enlace" data-ver="${p.id}">Verlo</button> · ` : ''}<button class="enlace" data-mostrar="${p.id}">¿Está mal? Cambiar</button>` : ''}
+      ${sel}
+    </div>${imp}</div>`;
+}
+async function pintarInicio() {
+  const ps = await todos();
+  const hoy = new Date(); const mes = hoyISO().slice(0, 7);
+  $('mesTxt').textContent = 'En ' + hoy.toLocaleDateString('es-ES', {month: 'long'}) + ' llevas gastado';
+  const delMes = ps.filter(p => esGasto(p) && p.fecha.startsWith(mes));
+  $('gastoMes').textContent = eur(delMes.reduce((s, p) => s + p.importe, 0));
+  $('gastoCuantos').textContent = delMes.length ? `En ${delMes.length} ${delMes.length === 1 ? 'factura o recibo' : 'facturas y recibos'}.` : 'Todavía no hay facturas de este mes.';
+  $('bienvenida').hidden = ps.length > 0;
+  const porCat = {};
+  for (const p of delMes) porCat[p.categoria] = (porCat[p.categoria] || 0) + p.importe;
+  const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+  const max = cats.length ? cats[0][1] : 1;
+  $('porCat').hidden = !cats.length;
+  $('listaCat').innerHTML = cats.map(([c, v]) => `<div class="cat"><div style="flex:1">${ICO[c] || ''} ${esc(CATS[c])}<div class="barra"><i style="width:${Math.round(v / max * 100)}%"></i></div></div><b>${eur(v)}</b></div>`).join('');
+  const lim = new Date(); lim.setDate(lim.getDate() + 60); const limISO = lim.toISOString().slice(0, 10);
+  const venc = ps.filter(p => p.vencimiento && p.vencimiento >= hoyISO() && p.vencimiento <= limISO).sort((a, b) => a.vencimiento.localeCompare(b.vencimiento));
+  $('proximos').hidden = !venc.length;
+  $('listaVenc').innerHTML = venc.map(p => `<div class="cat"><span>${ICO[p.categoria] || '📄'} ${esc(p.concepto)}${p.emisor ? ' · ' + esc(p.emisor) : ''}</span><b>${fechaTxt(p.vencimiento)}</b></div>`).join('');
+  const ult = [...ps].sort((a, b) => b.creado.localeCompare(a.creado)).slice(0, 5);
+  $('ultimos').hidden = !ult.length;
+  $('listaUlt').innerHTML = ult.map(p => filaPapel(p, false)).join('');
+}
+async function pintarPapeles() {
+  const q = claveEmisor($('buscar').value);
+  let ps = (await todos()).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  if (q) ps = ps.filter(p => claveEmisor([p.concepto, p.emisor, CATS[p.categoria]].join(' ')).includes(q));
+  if (!ps.length) { $('listaPapeles').innerHTML = `<p class="gris">${q ? 'No encuentro nada con eso.' : 'Todavía no hay papeles. Sube el primero desde «Subir».'}</p>`; return; }
+  const grupos = {};
+  for (const p of ps) (grupos[p.categoria] = grupos[p.categoria] || []).push(p);
+  const orden = Object.keys(grupos).sort((a, b) => (a === 'revisar' ? -1 : b === 'revisar' ? 1 : (CATS[a] || '').localeCompare(CATS[b] || '')));
+  $('listaPapeles').innerHTML = orden.map(c => `<h3 class="grupo">${ICO[c] || ''} ${esc(CATS[c] || 'Otros')} <span class="gris">(${grupos[c].length})</span></h3>
+    <div class="tarjeta">${grupos[c].map(p => filaPapel(p, true)).join('')}</div>`).join('');
+}
+
+/* ---------------- subir ---------------- */
+$('archivos').addEventListener('change', async (ev) => {
+  const files = [...ev.target.files]; ev.target.value = '';
+  const caja = $('resultados');
+  for (const f of files) {
+    const fila = document.createElement('div'); fila.className = 'aviso';
+    fila.innerHTML = `<span class="cargando"></span> Leyendo <b>${esc(f.name)}</b>…`;
+    caja.prepend(fila);
+    try {
+      const r = await procesar(f);
+      const p = r.papel;
+      const imp = p.importe != null ? ' · ' + eur(p.importe) : '';
+      if (r.repetido) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Ya lo tenías:</b> ${esc(p.concepto)}${imp}. No lo he guardado otra vez.`; }
+      else if (p.categoria === 'revisar') { fila.className = 'aviso rep'; fila.innerHTML = `❓ <b>${esc(p.concepto)}</b>: no lo he podido leer del todo, lo he dejado en «Por revisar».`; }
+      else { fila.className = 'aviso'; fila.innerHTML = `✓ <b>${esc(p.concepto)}${imp}</b><br><span class="gris">${esc(p.emisor)} · guardado en ${esc(CATS[p.categoria])}</span>`; }
+    } catch (e) {
+      console.error(e);
+      fila.className = 'aviso mal'; fila.innerHTML = `No he podido leer <b>${esc(f.name)}</b>. Comprueba que tienes internet y vuelve a probar.`;
+    }
+  }
+});
+
+/* ---------------- botones ---------------- */
+document.addEventListener('click', async (ev) => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.ir) return ir(b.dataset.ir);
+  if (b.dataset.ver) { const p = (await todos()).find(x => x.id === b.dataset.ver); if (p && p.blob) window.open(URL.createObjectURL(p.blob), '_blank'); return; }
+  if (b.dataset.mostrar) { const c = b.parentElement.querySelector('.cambio'); if (c) c.hidden = !c.hidden; return; }
+  const a = b.dataset.accion;
+  if (a === 'demo') { await cargarDemo(); ir('inicio'); }
+  if (a === 'quitarDemo') { for (const p of await todos()) if (p.demo) await borrar(p.id); ir('inicio'); }
+  if (a === 'borrarTodo') $('confirmarBorrar').hidden = false;
+  if (a === 'borrarSi') { for (const p of await todos()) await borrar(p.id); try { localStorage.removeItem('recuerdos'); } catch (e) {} $('confirmarBorrar').hidden = true; ir('inicio'); }
+});
+document.addEventListener('change', async (ev) => {
+  const s = ev.target.closest('select.cambiar'); if (!s) return;
+  const p = (await todos()).find(x => x.id === s.dataset.cat); if (!p) return;
+  p.categoria = s.value; await guardar(p); recordar(p.emisor, p.categoria);
+  pintarPapeles();
+});
+$('buscar').addEventListener('input', pintarPapeles);
+
+/* ---------------- familia de ejemplo ---------------- */
+async function cargarDemo() {
+  const ya = await todos(); if (ya.some(p => p.demo)) return;
+  const hoy = new Date();
+  const dia = (mesAtras, d) => { const x = new Date(hoy.getFullYear(), hoy.getMonth() - mesAtras, d, 12); return x.toISOString().slice(0, 10); };
+  const vence = (dias) => { const x = new Date(); x.setDate(x.getDate() + dias); return x.toISOString().slice(0, 10); };
+  const filas = [];
+  for (const m of [0, 1, 2]) {
+    filas.push(['Factura de luz', 'Iberdrola', 'luz', 'factura', [62.4, 71.15, 58.9][m], dia(m, 6)]);
+    filas.push(['Recibo de comunidad', 'Comunidad de propietarios', 'comunidad', 'recibo', 55, dia(m, 5)]);
+    filas.push(['Factura de teléfono e internet', 'Movistar', 'telefono', 'factura', 48.9, dia(m, 3)]);
+    filas.push(['Recibo de colegio', 'Colegio San José (ejemplo)', 'colegio', 'recibo', 120, dia(m, 8)]);
+    filas.push(['Recibo de hipoteca', 'Banco de ejemplo', 'vivienda', 'recibo', 540, dia(m, 1)]);
+    filas.push(['Factura Netflix', 'Netflix', 'suscripciones', 'factura', 12.99, dia(m, 16)]);
+  }
+  filas.push(['Factura de agua', 'Aguas municipales', 'agua', 'factura', 38.2, dia(0, 4)]);
+  filas.push(['Factura de dentista', 'Clínica dental (ejemplo)', 'salud', 'factura', 85, dia(1, 18)]);
+  filas.push(['Ticket de ropa', 'Zara', 'ropa', 'factura', 59.95, dia(0, 2)]);
+  let n = 0;
+  for (const [concepto, emisor, cat, tipo, importe, fecha] of filas) {
+    await guardar({id: 'demo' + (n++), hash: 'demo' + n, nombre: '', mime: '', fecha, emisor, importe, tipo, categoria: cat, vencimiento: '',
+      concepto, creado: new Date(Date.now() - n * 60000).toISOString(), demo: true, blob: null});
+  }
+  await guardar({id: 'demo' + (n++), hash: 'demo' + n, nombre: '', mime: '', fecha: dia(11, 20), emisor: 'Mapfre', importe: null, tipo: 'presupuesto',
+    categoria: 'seguros', vencimiento: vence(25), concepto: 'Aviso de renovación del seguro de hogar', creado: new Date(Date.now() - 99e6).toISOString(), demo: true, blob: null});
+}
+
+/* ---------------- arranque ---------------- */
+(async () => {
+  try { await abrirDB(); } catch (e) { document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso mal">Este navegador no me deja guardar. Prueba en Safari o Chrome normal (no en modo privado).</p>'); return; }
+  ir('inicio');
+  // preparo el lector en segundo plano para que la primera subida vaya más rápida
+  const despues = window.requestIdleCallback || ((f) => setTimeout(f, 2500));
+  despues(() => lector().catch(() => {}));
+})();
+</script>
+</body>
+</html>
