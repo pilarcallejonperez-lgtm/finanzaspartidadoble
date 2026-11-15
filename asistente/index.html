@@ -58,6 +58,49 @@ pre{margin:0;padding:18px;white-space:pre-wrap;word-break:break-word;font:13.5px
 </style>
 </head>
 <body>
+<!--CANDADO_INI--><style>
+html.pd-cerrado body>*:not(#pd-candado){display:none!important}
+#pd-candado{position:fixed;inset:0;z-index:99999;background:#1f4535;color:#f6efdf;display:none;align-items:center;justify-content:center;
+  padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;overflow:auto}
+html.pd-cerrado #pd-candado{display:flex}
+#pd-candado .c{max-width:440px;width:100%;text-align:center}
+#pd-candado h1{font-family:Georgia,serif;font-size:30px;line-height:1.2;margin:10px 0 12px;color:#f6efdf}
+#pd-candado p{font-size:17px;line-height:1.5;color:#e9dfc6;margin:0 0 14px}
+#pd-candado .ig{display:block;background:#c9a85c;color:#1f4535;font-weight:700;font-size:18px;padding:14px 18px;border-radius:12px;text-decoration:none;margin:18px 0}
+#pd-candado form{display:flex;gap:8px;margin-top:22px}
+#pd-candado input{flex:1;min-width:0;font-size:18px;padding:12px;border-radius:10px;border:1px solid #c9a85c;background:#fbf7ef;color:#1f2a24;text-transform:uppercase;letter-spacing:.15em;text-align:center}
+#pd-candado button{font-size:17px;font-weight:700;padding:12px 16px;border-radius:10px;border:1px solid #c9a85c;background:transparent;color:#f6efdf;cursor:pointer}
+#pd-candado .mal{color:#ffb4a8;min-height:1.4em;font-size:15px;margin-top:8px}
+#pd-candado small{display:block;margin-top:26px;color:#c9a85c;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+</style>
+<div id="pd-candado" role="dialog" aria-labelledby="pd-cand-t">
+  <div class="c">
+    <div style="font-size:44px">🔒</div>
+    <h1 id="pd-cand-t">Esta herramienta es privada</h1>
+    <p>La comparto con las personas que me lo piden. Escríbeme y te mando tu acceso personal.</p>
+    <a class="ig" href="https://ig.me/m/finanzas.partidadoble" target="_blank" rel="noopener">Pedir acceso a Mapi por Instagram</a>
+    <p>¿Ya tienes tu código? Escríbelo aquí:</p>
+    <form id="pd-cand-f" autocomplete="off"><input id="pd-cand-i" maxlength="12" aria-label="Código de acceso" placeholder="CÓDIGO"><button>Entrar</button></form>
+    <div class="mal" id="pd-cand-m" aria-live="polite"></div>
+    <small>Partida Doble · Soy tu contable</small>
+  </div>
+</div>
+<script>
+(function(){
+  var PAG='asistente', OK=["222798f5b3cdef9d20d46b33d32658718003d7ae1ed1cc8e07a9bc19a7aa4a64", "1db66a55f57321856820abc84eea0ae9894ed73cb88b2bf3e0cba37e19c541a4", "16d5e901a92ca1f5c2111b86795779ae3d6e27f983d28300175b4592e298d0fa", "5fde9e3281a81fa2ea74d79d9cb9dc84dafba6305ce5a48152c6ef3dc979f15a", "9638291d3c9924693e2dd148f2932fe88d0520daf5d443eafedb1926c1af4edc", "328722cdf67df2fe3d853d001584a614cdadad6f24b63dd545db279e16cc0315", "4fe72dbb7d9fd1d3737343590dbd618e4943d260ddc7f697cae508d003a77299", "5ec46ff96c980e661e1afe1db42840bd5c76a3d39b94904ba0795a5958b46a86", "1af8557c3c4ae27ab71f1a6e0a5df8f7169c98211000a2a23a628442e0cd85ee", "3caae51a7c34685a5118c1fac12fd40723cc9a3b9de8ce21ecbc740acd6aa0a1", "064e368472e25188fc195b6941e29788dbcc900c18d5454fcd146b3327122c9a", "c8ab43bcb1072b7143c3af310afd322b1724702ec8a06ed3c9e5d0cea37972a7", "581bbb4188235a273ad6d72e6a0af741023ec14eca398ed5e77f616029b7def8", "a0997ca010a91f206c7f192db52640009598e1d647394e454a29c914c4f3a13b", "fe55db4129e221f8de54a86236765d824996054cf351671bd7de2e2bcac8c15d", "cdeb2f17d1a1eb3832080e20f7f620f366c6f1ad8631364b003d5c0b6ab5acf0", "13ca2de8f3ea9b7dae623239e52f70c4b17631ae3ef92d3c476a7d6db8c2f394", "c33ca66b6519389ea3dcfd69f205a5175f163ac14e1ccb05594e61c551102fa5", "669f93bf104062983f57757bbb60a04403d914415696237e89698328eb843970", "847794d7dda65163fe0e098da37a2dcc157709f99e8277ae527e245f59a9d0d4", "6957f3caea6ffff9ea3f7724f051d1d9af5e4446bccb7120004a9936a1789264", "f447d2eea24cdc3a2cbd8310f76137ca0ccd43777bf9240982c396fda7679108", "d4d4a325798ea66dba0650db76b4a7a196e51498084c609bd2729d7d0dd4a012", "68749d510891980971e61397677616599f64dee1209180fa08a408feb4e6303c", "3cb082b12622ae0461f68562096ccd09b1b020f4efeee3c1610dee3d4efe8cc5", "eedb6a9c051d0db9310503acf0d7ae0a0285d46118f99613978e7fefee4da826", "a01736f10e4369272a73aafcb5709611de31cbe7153c68485623c7f3bf11dba6", "48c994a4d376816c8da826b3811501c72152557622766e16d82911398b5c716a", "45b0424627305ab02f63b9653d755a0a759d35490efd71fbeccb2dd8787f63be", "978d7191fc3526c9f7431ea7f551db777de34e2952b01f077bb9a4b2a7eaa3b5"], CLAVE='pd_acceso_'+PAG, raiz=document.documentElement;
+  raiz.classList.add('pd-cerrado');
+  function huella(c){return crypto.subtle.digest('SHA-256',new TextEncoder().encode('pd-acceso:'+c.trim().toUpperCase())).then(function(b){return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')})}
+  function guardar(c){try{localStorage.setItem(CLAVE,c)}catch(e){}}
+  function leer(){try{return localStorage.getItem(CLAVE)||''}catch(e){return ''}}
+  function abrir(){raiz.classList.remove('pd-cerrado')}
+  function probar(c,aviso){if(!c)return Promise.resolve(false);return huella(c).then(function(x){if(OK.indexOf(x)>=0){guardar(c.trim().toUpperCase());abrir();return true}if(aviso)document.getElementById('pd-cand-m').textContent='Ese código no vale. Pídeme el tuyo por Instagram.';return false})}
+  var url=new URL(location.href), q=url.searchParams.get('c');
+  if(q){url.searchParams.delete('c');history.replaceState(null,'',url.pathname+url.search+url.hash)}
+  probar(q||leer(),false).then(function(ok){if(!ok&&q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo por Instagram.'});
+  document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();probar(document.getElementById('pd-cand-i').value,true)});
+})();
+</script>
+<!--CANDADO_FIN-->
 
 <div class="banda"><div class="in">
   <div class="marca">Partida Doble · @finanzas.partidadoble</div>
