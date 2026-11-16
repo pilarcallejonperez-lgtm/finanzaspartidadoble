@@ -47,7 +47,11 @@ _PISTAS = [
     (r"luz|electricidad|energia", "luz"), (r"\bgas\b|butano", "gas"), (r"agua", "agua"),
     (r"telefono|internet|movil|fibra", "telefono"), (r"seguro", "seguros"),
     (r"educacion|colegio|formacion|guarderia|universidad", "colegio"),
+    (r"abogado|gestoria|asesoria|notari|procurador|concurso de acreedores", "profesionales"),
     (r"impuesto|tasa|hacienda|multa", "impuestos"),
+    (r"donativo|donacion|cuota de socio|cuotas|\bong\b|asociacion", "donativos"),
+    (r"mascota|veterinari|pienso|perro|gato", "mascotas"),
+    (r"familia|regalo", "familia"),
     (r"suscripcion|apps|software|streaming", "suscripciones"),
     (r"alimentacion|supermercado|super\b|comida", "super"),
     (r"restaurante|cafeteria|bares?\b|comer fuera", "restaurantes"),
@@ -56,9 +60,10 @@ _PISTAS = [
     (r"salud|farmacia|medic|dentista|optica", "salud"),
     (r"vehiculo|coche|gasolina|combustible|parking|aparcamiento|peaje|taller", "coche"),
     (r"transporte|taxi|autobus|tren|metro", "transporte"),
-    (r"ocio|viaje|cine|espectaculo|cultura|hotel|regalo", "ocio"),
-    (r"limpieza|donativo|donacion|cuota de socio|ong", "otros"),
-    (r"compra|hogar|decoracion|electronica|bricolaje", "compras"),
+    (r"ocio|cine|espectaculo|cultura", "ocio"),
+    (r"viaje|hotel|vuelo|vacaciones", "viajes"),
+    (r"limpieza|hogar|decoracion|mueble|bricolaje", "hogar"),
+    (r"compra|electronica", "compras"),
 ]
 _PISTAS_RX = [(re.compile(rx), cat) for rx, cat in _PISTAS]
 
