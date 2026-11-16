@@ -177,7 +177,7 @@ html.pd-cerrado #pd-candado{display:flex}
   if(PAG==='papeles'&&url.searchParams.get('demo')==='1'){window.PD_DEMO=true;abrir();}
   // En la app de papeles, el candado invita a probarla 15 días y a verla por dentro
   if(PAG==='papeles'){try{document.getElementById('pd-cand-t').textContent='Pruébala 15 días gratis';
-    var tx=document.querySelector('#pd-candado .c > p');if(tx)tx.innerHTML='Déjame tu nombre, tu correo y tu teléfono y te mando tu acceso. ¿Quieres verla antes por dentro? <a href="?demo=1" style="color:#c9a85c;font-weight:700">Ver cómo funciona →</a>';
+    var tx=document.querySelector('#pd-candado .c > p');if(tx)tx.innerHTML='<b>Versión beta, en pruebas.</b> Déjame tu nombre, tu correo y tu teléfono y te mando tu acceso con las instrucciones. ¿Quieres verla antes por dentro? <a href="?demo=1" style="color:#c9a85c;font-weight:700">Ver cómo funciona →</a>';
     var bt=document.querySelector('#pd-pide button');if(bt)bt.textContent='Quiero probarla';
     var tel=document.createElement('input');tel.id='pd-pide-t';tel.type='tel';tel.placeholder='Tu teléfono (opcional)';tel.setAttribute('aria-label','Tu teléfono');tel.autocomplete='tel';
     document.getElementById('pd-pide-c').after(tel);}catch(e){}}
@@ -248,10 +248,12 @@ html.pd-cerrado #pd-candado{display:flex}
 </div>
 <script>
 (function(){
-  var K='pd_bienvenida_vista', b=document.getElementById('pd-bienvenida');
-  function vista(){try{return localStorage.getItem(K)==='1'}catch(e){return false}}
-  function cerrar(){b.hidden=true;try{localStorage.setItem(K,'1')}catch(e){}}
-  if(!window.PD_DEMO&&!vista())b.hidden=false;
+  // Mapi (16/11): sale cada vez que se abre mientras la app esté vacía (sin papeles); al cerrarla no vuelve hasta la próxima vez que la abra
+  var K='pd_bienvenida_sesion', b=document.getElementById('pd-bienvenida');
+  function vista(){try{return sessionStorage.getItem(K)==='1'}catch(e){return false}}
+  function cerrar(){b.hidden=true;try{sessionStorage.setItem(K,'1')}catch(e){}}
+  function mirar(){if(window.PD_DEMO||vista())return;var vacia=document.getElementById('bienvenida');if(vacia&&!vacia.hidden)b.hidden=false;}
+  if(!window.PD_DEMO&&!vista()){setTimeout(mirar,900);setTimeout(mirar,2500);}
   document.getElementById('pd-bv-subir').addEventListener('click',function(){cerrar();try{ir('subir')}catch(e){}});
   document.getElementById('pd-bv-ver').addEventListener('click',cerrar);
   window.verBienvenida=function(){b.hidden=false};
