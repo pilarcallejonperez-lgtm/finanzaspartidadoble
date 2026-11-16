@@ -1372,7 +1372,7 @@ document.addEventListener('click', async (ev) => {
   }
   if (b.dataset.mostrar) { const c = b.parentElement.querySelector('.cambio'); if (c) c.hidden = !c.hidden; return; }
   const a = b.dataset.accion;
-  if (a === 'demo') { await cargarDemo(); ir('inicio'); }
+  if (a === 'demo') { if (!DEMO) { location.href = './?demo=1'; return; } await cargarDemo(); ir('inicio'); }
   if (a === 'quitarDemo') { for (const p of await todos()) if (p.demo) await borrar(p.id); ir('inicio'); }
   if (a === 'borrarTodo') $('confirmarBorrar').hidden = false;
   if (a === 'borrarSi') {
@@ -1546,6 +1546,8 @@ function fijarManifiesto() {
     ir('inicio');
     return;
   }
+  // Mapi (16/11): la familia de ejemplo vive solo en ?demo=1; si quedó en su app de verdad (versiones antiguas), fuera
+  try { for (const p of await todos()) if (p.demo) await borrar(p.id); } catch (e) {}
   ir('inicio');
   fijarManifiesto();
   if (window.__cfgEnlace) document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">✓ <b>Ya tienes puestos tu meta y tus topes.</b> Los ves en «Cuentas» y los puedes cambiar cuando quieras.</p>');
