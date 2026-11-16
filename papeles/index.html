@@ -835,6 +835,27 @@ const EXTRA = ['impuestos'];
 const CON_TOPE = ['super', 'restaurantes', 'ropa', 'compras', 'ocio', 'transporte', 'coche', 'belleza'];
 const HORMIGA_CATS = ['restaurantes', 'ocio', 'compras', 'ropa', 'otros', 'duda', 'super', 'belleza'];
 const leerCfg = () => { try { return JSON.parse(leerRecuerdos()._cfg || '{}'); } catch (e) { return {}; } };
+// Un enlace puede traer la meta y los topes ya puestos (Mapi se los prepara a cada clienta, y así nadie los escribe a mano):
+//   ?topes=restaurantes:55,ropa:40&meta=4000&fecha=2027-12-31
+(function cfgDesdeEnlace() {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('topes') && !q.has('meta') && !q.has('fecha')) return;
+    const c = leerCfg();
+    if (q.has('topes')) {
+      const t = Object.assign({}, c.topes || {});
+      for (const par of q.get('topes').split(',')) { const [k, v] = par.split(':'); if (CATS[k] && +v > 0) t[k] = +v; }
+      c.topes = t;
+    }
+    if (+q.get('meta') > 0) c.objetivo = +q.get('meta');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(q.get('fecha') || '')) c.fecha = q.get('fecha');
+    c.t = new Date().toISOString();
+    const r = leerRecuerdos(); r._cfg = JSON.stringify(c); localStorage.setItem('recuerdos', JSON.stringify(r));
+    ['topes', 'meta', 'fecha'].forEach(k => q.delete(k));
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+    window.__cfgEnlace = true;
+  } catch (e) { console.warn('cfg del enlace', e); }
+})();
 function grupoDe(a) {
   if (a.tipo === 'i') return 'entra';
   if (FIJOS.includes(a.categoria)) return 'fijos';
@@ -1172,6 +1193,7 @@ async function cargarDemo() {
 (async () => {
   try { await abrirDB(); } catch (e) { document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso mal">Este navegador no me deja guardar. Prueba en Safari o Chrome normal (no en modo privado).</p>'); return; }
   ir('inicio');
+  if (window.__cfgEnlace) document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">✓ <b>Ya tienes puestos tu meta y tus topes.</b> Los ves en «Cuentas» y los puedes cambiar cuando quieras.</p>');
   if (Sincro.recienConectado()) document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">✓ <b>Dispositivo conectado.</b> Desde ahora ves aquí los mismos papeles que en tus otros dispositivos.</p>');
   Sincro.sincronizar();
   // preparo el lector en segundo plano para que la primera subida vaya más rápida
