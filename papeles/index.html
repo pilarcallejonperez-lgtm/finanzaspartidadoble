@@ -285,11 +285,13 @@ const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tess
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const CATS = {luz:'Luz', agua:'Agua', gas:'Gas', telefono:'Teléfono e internet', seguros:'Seguros', colegio:'Colegio',
-  comunidad:'Comunidad', vivienda:'Hipoteca o alquiler', coche:'Coche', transporte:'Transporte', salud:'Salud',
+  comunidad:'Comunidad', vivienda:'Hipoteca o alquiler', financiacion:'Préstamos, renting y tarjeta', coche:'Vehículo y transporte',
+  transporte:'Transporte público', salud:'Salud', deporte:'Deporte y gimnasio', belleza:'Belleza y cuidado personal',
   suscripciones:'Suscripciones', impuestos:'Impuestos y tasas', super:'Súper y comida', restaurantes:'Comer fuera',
   ropa:'Ropa', compras:'Compras', ocio:'Ocio y caprichos', otros:'Otros', revisar:'Por revisar', banco:'Banco', duda:'En duda', ingreso:'Ingresos'};
 const CATS_ELEGIR = Object.keys(CATS).filter(k => !['revisar', 'banco', 'duda', 'ingreso'].includes(k));
 const ICO = {luz:'💡', agua:'🚿', gas:'🔥', telefono:'📱', seguros:'🛡️', colegio:'🎒', comunidad:'🏢', vivienda:'🏠', coche:'🚗',
+  financiacion:'💳', deporte:'🏋️', belleza:'💄',
   transporte:'🚌', salud:'🩺', suscripciones:'📺', impuestos:'🏛️', super:'🛒', restaurantes:'🍽️', ropa:'👗', compras:'🛍️',
   ocio:'🎉', otros:'📄', revisar:'❓', banco:'🏦', duda:'🤔', ingreso:'💶'};
 const SIN_IMPORTE = ['poliza', 'presupuesto', 'contrato', 'garantia'];
@@ -798,10 +800,10 @@ async function pintarInicio() {
 }
 /* ---------------- Mis cuentas: el panel de finanzas ----------------
    Todo sale de lo que sube (facturas, tickets y capturas del banco). Lo único opcional: ahorro anual, saldo de hoy e ingreso. */
-const FIJOS = ['luz', 'agua', 'gas', 'telefono', 'seguros', 'colegio', 'comunidad', 'vivienda', 'suscripciones'];
+const FIJOS = ['luz', 'agua', 'gas', 'telefono', 'seguros', 'colegio', 'comunidad', 'vivienda', 'suscripciones', 'financiacion', 'deporte'];
 const EXTRA = ['impuestos'];
-const CON_TOPE = ['super', 'restaurantes', 'ropa', 'compras', 'ocio', 'transporte', 'coche'];
-const HORMIGA_CATS = ['restaurantes', 'ocio', 'compras', 'ropa', 'otros', 'duda', 'super'];
+const CON_TOPE = ['super', 'restaurantes', 'ropa', 'compras', 'ocio', 'transporte', 'coche', 'belleza'];
+const HORMIGA_CATS = ['restaurantes', 'ocio', 'compras', 'ropa', 'otros', 'duda', 'super', 'belleza'];
 const leerCfg = () => { try { return JSON.parse(leerRecuerdos()._cfg || '{}'); } catch (e) { return {}; } };
 function grupoDe(a) {
   if (a.tipo === 'i') return 'entra';

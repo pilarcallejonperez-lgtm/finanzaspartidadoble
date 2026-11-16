@@ -12,7 +12,8 @@ from pathlib import Path
 CATEGORIAS = [
     ("luz", "Luz"), ("agua", "Agua"), ("gas", "Gas"), ("telefono", "Teléfono e internet"),
     ("seguros", "Seguros"), ("colegio", "Colegio"), ("comunidad", "Comunidad"),
-    ("vivienda", "Hipoteca o alquiler"), ("coche", "Coche"), ("transporte", "Transporte"), ("salud", "Salud"),
+    ("vivienda", "Hipoteca o alquiler"), ("coche", "Vehículo y transporte"), ("transporte", "Transporte público"), ("salud", "Salud"),
+    ("financiacion", "Préstamos, renting y tarjeta"), ("deporte", "Deporte y gimnasio"), ("belleza", "Belleza y cuidado personal"),
     ("suscripciones", "Suscripciones"), ("impuestos", "Impuestos y tasas"),
     ("super", "Súper y comida"), ("restaurantes", "Comer fuera"), ("ropa", "Ropa"), ("compras", "Compras"),
     ("ocio", "Ocio y caprichos"), ("otros", "Otros"),
@@ -700,6 +701,20 @@ COMERCIOS = [
     (r"bizum|transferencia|transf|traspaso|cajero|reintegro|retirada( de)? efectivo|disposicion efectivo|"
      r"comision|comisiones|mantenimiento cuenta|nomina|pension", "otros"),
 ]
+NUEVAS = [
+    # préstamos, renting y la cuota de la tarjeta de crédito (no la hipoteca: esa es «vivienda»)
+    (r"renting|santander consumer|consumer finance|financiacion|financiera|prestamo(?! hipotecario)|prestamos personales|"
+     r"cajamar consumo|cofidis|cetelem|oney|aplazame|sequra|klarna|cargo mensual tarjeta( de)? credito|"
+     r"cuota( de la)? tarjeta|tarjeta de credito \w+ \(?cuota|liquidacion( de la)? tarjeta( de)? credito", "financiacion"),
+    # deporte y gimnasio
+    (r"gimnasios?|gym|basic ?fit|mcfit|vivagym|viva gym|altafit|anytime fitness|dreamfit|go ?fit|synergym|fitness|"
+     r"duet fit|crossfit|pilates|yoga|padel|piscina|polideportivo|club deportivo|deportes?", "deporte"),
+    # belleza y cuidado personal
+    (r"peluqueria|peluqueros|estetica|centro de estetica|barberia|manicura|depilacion|rituals|rituals ?cosmetics|"
+     r"primor|druni|sephora|douglas|kiko|kiko milano|perfumeria|cosmetica|cosmeticos|icaria|yves rocher|"
+     r"the body shop|lush|belleza|cuidado personal|spa", "belleza"),
+]
+_NUEVAS_RX = [(re.compile(r"(?<![a-z0-9])(?:" + rx + r")(?![a-z0-9])"), cat) for rx, cat in NUEVAS]
 _COMERCIOS_RX = [(re.compile(r"(?<![a-z0-9])(?:" + rx + r")(?![a-z0-9])"), cat) for rx, cat in COMERCIOS]
 _EMISORES_RX = [(re.compile(rx), cat) for rx, _, cat in EMISORES]
 _PALABRAS_RX = [(cat, re.compile(r"(?<![a-z0-9])(?:" + "|".join(re.escape(p) for p in pal) + r")(?![a-z0-9])"))
@@ -810,6 +825,10 @@ def clasificar_comercio(texto):
     con_signos, norm = normalizar_comercio(texto)
     if GAS_INICIO.search(con_signos) or GAS_PALABRAS.search(con_signos):
         return "coche"
+    # Categorías que pidió Mapi el 16/11/2026: van antes que el diccionario (que las metía en «Compras» u «Ocio»)
+    for rx, cat in _NUEVAS_RX:
+        if rx.search(tp):
+            return cat
     cat = buscar_en_diccionario(norm)
     if cat:
         return cat
