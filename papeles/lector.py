@@ -13,7 +13,7 @@ CATEGORIAS = [
     ("luz", "Luz"), ("agua", "Agua"), ("gas", "Gas"), ("telefono", "Teléfono e internet"),
     ("seguros", "Seguros"), ("colegio", "Colegio"), ("comunidad", "Comunidad"),
     ("vivienda", "Hipoteca o alquiler"), ("coche", "Vehículo y transporte"), ("transporte", "Transporte público"), ("salud", "Salud"),
-    ("financiacion", "Préstamos, renting y tarjeta"), ("deporte", "Deporte y gimnasio"), ("belleza", "Belleza y cuidado personal"),
+    ("financiacion", "Préstamos, renting y tarjeta"), ("belleza", "Belleza, cuidado personal y deporte"),
     ("suscripciones", "Suscripciones"), ("impuestos", "Impuestos y tasas"),
     ("super", "Súper y comida"), ("restaurantes", "Comer fuera"), ("ropa", "Ropa"), ("compras", "Compras"),
     ("ocio", "Ocio y caprichos"), ("otros", "Otros"),
@@ -708,7 +708,7 @@ NUEVAS = [
      r"cuota( de la)? tarjeta|tarjeta de credito \w+ \(?cuota|liquidacion( de la)? tarjeta( de)? credito", "financiacion"),
     # deporte y gimnasio
     (r"gimnasios?|gym|basic ?fit|mcfit|vivagym|viva gym|altafit|anytime fitness|dreamfit|go ?fit|synergym|fitness|"
-     r"duet fit|crossfit|pilates|yoga|padel|piscina|polideportivo|club deportivo|deportes?", "deporte"),
+     r"duet fit|crossfit|pilates|yoga|padel|piscina|polideportivo|club deportivo|deportes?", "belleza"),  # Mapi: junto a belleza
     # belleza y cuidado personal
     (r"peluqueria|peluqueros|estetica|centro de estetica|barberia|manicura|depilacion|rituals|rituals ?cosmetics|"
      r"primor|druni|sephora|douglas|kiko|kiko milano|perfumeria|cosmetica|cosmeticos|icaria|yves rocher|"

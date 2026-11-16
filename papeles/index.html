@@ -286,12 +286,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 const CATS = {luz:'Luz', agua:'Agua', gas:'Gas', telefono:'Teléfono e internet', seguros:'Seguros', colegio:'Colegio',
   comunidad:'Comunidad', vivienda:'Hipoteca o alquiler', financiacion:'Préstamos, renting y tarjeta', coche:'Vehículo y transporte',
-  transporte:'Transporte público', salud:'Salud', deporte:'Deporte y gimnasio', belleza:'Belleza y cuidado personal',
+  transporte:'Transporte público', salud:'Salud', belleza:'Belleza, cuidado personal y deporte',
   suscripciones:'Suscripciones', impuestos:'Impuestos y tasas', super:'Súper y comida', restaurantes:'Comer fuera',
   ropa:'Ropa', compras:'Compras', ocio:'Ocio y caprichos', otros:'Otros', revisar:'Por revisar', banco:'Banco', duda:'En duda', ingreso:'Ingresos'};
 const CATS_ELEGIR = Object.keys(CATS).filter(k => !['revisar', 'banco', 'duda', 'ingreso'].includes(k));
 const ICO = {luz:'💡', agua:'🚿', gas:'🔥', telefono:'📱', seguros:'🛡️', colegio:'🎒', comunidad:'🏢', vivienda:'🏠', coche:'🚗',
-  financiacion:'💳', deporte:'🏋️', belleza:'💄',
+  financiacion:'💳', belleza:'💄',
   transporte:'🚌', salud:'🩺', suscripciones:'📺', impuestos:'🏛️', super:'🛒', restaurantes:'🍽️', ropa:'👗', compras:'🛍️',
   ocio:'🎉', otros:'📄', revisar:'❓', banco:'🏦', duda:'🤔', ingreso:'💶'};
 const SIN_IMPORTE = ['poliza', 'presupuesto', 'contrato', 'garantia'];
@@ -732,10 +732,25 @@ function apuntes(ps) {
   const facturas = ps.filter(esGasto);
   const out = facturas.map(p => ({fecha: p.fecha, tipo: 'g', importe: p.importe, categoria: p.categoria, concepto: p.concepto}));
   const dias = (a, b) => Math.abs((new Date(a) - new Date(b)) / 864e5);
+  // Los Bizum van y vienen (cenas a medias, la familia…): contarlos uno a uno infla lo que entra y lo que sale.
+  // Se cuenta solo el NETO de cada mes: si entra más de lo que sale, es un ingreso; si no, un gasto.
+  const bizum = {};
+  const esBizum = m => /bizum/i.test((m.concepto || '') + ' ' + (m.clave || ''));
   for (const p of ps) for (const m of (p.movs || [])) {
     if ((m.divisa || 'EUR') !== 'EUR') continue;
+    if (esBizum(m)) {
+      const k = m.fecha.slice(0, 7), b = bizum[k] || (bizum[k] = {neto: 0, fecha: m.fecha});
+      b.neto += m.tipo === 'i' ? m.importe : -m.importe;
+      if (m.fecha > b.fecha) b.fecha = m.fecha;
+      continue;
+    }
     if (m.tipo === 'g' && facturas.some(f => Math.abs(f.importe - m.importe) < 0.01 && dias(f.fecha, m.fecha) <= 5)) continue;
     out.push({fecha: m.fecha, tipo: m.tipo, importe: m.importe, categoria: m.categoria, concepto: m.concepto});
+  }
+  for (const b of Object.values(bizum)) {
+    const n = Math.round(b.neto * 100) / 100;
+    if (n > 0) out.push({fecha: b.fecha, tipo: 'i', importe: n, categoria: 'ingreso', concepto: 'Bizum del mes (neto)'});
+    else if (n < 0) out.push({fecha: b.fecha, tipo: 'g', importe: -n, categoria: 'otros', concepto: 'Bizum del mes (neto)'});
   }
   return out;
 }
@@ -800,7 +815,7 @@ async function pintarInicio() {
 }
 /* ---------------- Mis cuentas: el panel de finanzas ----------------
    Todo sale de lo que sube (facturas, tickets y capturas del banco). Lo único opcional: ahorro anual, saldo de hoy e ingreso. */
-const FIJOS = ['luz', 'agua', 'gas', 'telefono', 'seguros', 'colegio', 'comunidad', 'vivienda', 'suscripciones', 'financiacion', 'deporte'];
+const FIJOS = ['luz', 'agua', 'gas', 'telefono', 'seguros', 'colegio', 'comunidad', 'vivienda', 'suscripciones', 'financiacion'];
 const EXTRA = ['impuestos'];
 const CON_TOPE = ['super', 'restaurantes', 'ropa', 'compras', 'ocio', 'transporte', 'coche', 'belleza'];
 const HORMIGA_CATS = ['restaurantes', 'ocio', 'compras', 'ropa', 'otros', 'duda', 'super', 'belleza'];
