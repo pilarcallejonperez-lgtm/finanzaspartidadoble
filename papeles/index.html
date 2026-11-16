@@ -1330,30 +1330,42 @@ async function pintarCuentas() {
   $('cHormiga').innerHTML = `<details class="bloque"><summary><span>Gastos hormiga (de 15 € o menos)</span><span>${eur(suma(hormiga))}</span></summary>
     <p class="gris">${hormiga.length} pequeños gastos este mes. Al año serían unos ${eur(suma(hormiga) / hoy.getDate() * 365)}.</p>${hormiga.map(fila).join('')}</details>`;
   // el año: real hasta este mes y previsión hasta diciembre
+  // Mapi (16/11: «el presupuesto de 2027 es altísimo»): lo previsto sale de SU PLAN (sin pagos sueltos, con sus cambios con
+  // fecha) más el día a día (sus topes; si no, lo que suele gastar), no de la media de todo lo gastado.
+  const semCatsP = CON_TOPE.filter(c => !FUERA_SEMANA.includes(c));
+  const diaPrevCat = c => misTopes[c] > 0 ? +misTopes[c] : (ms[c] || 0);
+  const diaPrevMes = semCatsP.reduce((s, c) => s + diaPrevCat(c), 0) + Object.keys(ms).filter(c => !semCatsP.includes(c)).reduce((s, c) => s + ms[c], 0);
+  const prevMesPlan = ym => catsPlan.reduce((s, c) => s + valorMes(c, ym), 0) + diaPrevMes + puntuales.filter(p => p.mes === ym && p.tipo !== 'i').reduce((s, p) => s + +p.importe, 0);
+  const prevIngMes = ym => valorMes('ingreso', ym) + puntuales.filter(p => p.mes === ym && p.tipo === 'i').reduce((s, p) => s + +p.importe, 0);
   const prevIng = ingreso, prevGas = ant.length ? media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g')))) : suma(delMes.filter(a => a.tipo === 'g'));
   let filas = '', acumulado = 0, realHasta = 0;
   for (let m = 0; m < 12; m++) {
     const ym = `${anio}-${String(m + 1).padStart(2, '0')}`, l = pm[ym] || [];
     const futuro = ym > mes, sinDatos = !l.length && !futuro;
-    const ing = futuro ? prevIng : suma(g(l, 'entra')), gas = futuro ? prevGas : suma(l.filter(a => a.tipo === 'g'));
+    const ing = futuro ? prevIngMes(ym) : suma(g(l, 'entra')), gas = futuro ? prevMesPlan(ym) : suma(l.filter(a => a.tipo === 'g'));
     if (sinDatos) continue;
     const res = ing - gas; acumulado += res; if (!futuro) realHasta += res;
-    filas += `<tr class="${futuro ? 'prev' : ''}"><td>${nombreMes(ym)}</td><td>${eur(ing)}</td><td>${eur(gas)}</td><td>${eur(res)}</td></tr>`;
+    filas += `<tr class="${futuro ? 'prev' : ''}"><td>${nombreMes(ym)}</td><td>${eur(ing)}</td><td>${eur(gas)}</td><td>${eur(res)}</td><td><b>${eur(acumulado)}</b></td></tr>`;
   }
   const finAnio = cfg.saldo !== undefined && cfg.saldo !== '' ? (+cfg.saldo + (acumulado - realHasta)) : null;
   $('cAnio').innerHTML = `<h3>${anio}, mes a mes</h3><p class="gris">En cursiva, lo previsto si sigues como hasta ahora.</p>
-    <div class="scroll-x"><table class="anio"><tr><th></th><th>Entra</th><th>Sale</th><th>Queda</th></tr>${filas}</table></div>
+    <div class="scroll-x"><table class="anio"><tr><th></th><th>Entra</th><th>Sale</th><th>Queda</th><th>Acumulado</th></tr>${filas}</table></div>
     <p style="margin-top:10px">${finAnio !== null ? `Si sigues así, a 31 de diciembre tendrás unos <b>${eur(finAnio)}</b> en el banco.` : `Si sigues así, este año te quedarán <b>${eur(acumulado)}</b>.`}${cfg.ahorro > 0 ? ` Tu objetivo es ahorrar ${eur(+cfg.ahorro)}: ${acumulado >= cfg.ahorro ? 'lo cumples' : 'te faltan ' + eur(cfg.ahorro - acumulado)}.` : ''}</p>`;
   // presupuesto del año que viene: lo que sueles gastar al mes en cada cosa
-  const mesesConDatos = Object.keys(pm).filter(k => k <= mes && k.startsWith(String(anio))).length || 1;
+  const sig = anio + 1, mesesSig = Array.from({length: 12}, (_, i) => `${sig}-${String(i + 1).padStart(2, '0')}`);
   const porCat = {};
-  for (const a of todos_) if (a.tipo === 'g' && a.fecha.startsWith(String(anio))) porCat[a.categoria] = (porCat[a.categoria] || 0) + a.importe;
-  const presu = Object.entries(porCat).map(([c, v]) => [c, v / mesesConDatos]).sort((a, b) => b[1] - a[1]);
+  for (const c of catsPlan) { const v = media(mesesSig.map(ym => valorMes(c, ym))); if (v > 0) porCat[c] = (porCat[c] || 0) + v; }
+  for (const c of semCatsP) { const v = diaPrevCat(c); if (v > 0) porCat[c] = (porCat[c] || 0) + v; }
+  for (const c of Object.keys(ms)) if (!semCatsP.includes(c) && ms[c] > 0) porCat[c] = (porCat[c] || 0) + ms[c];
+  const puntSig = puntuales.filter(p => p.mes.startsWith(String(sig)) && p.tipo !== 'i').reduce((s, p) => s + +p.importe, 0);
+  if (puntSig > 0) porCat.otros = (porCat.otros || 0) + puntSig / 12;
+  const presu = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
   const totalMes = presu.reduce((s, [, v]) => s + v, 0);
+  const ingresoSig = media(mesesSig.map(prevIngMes));
   $('cPresu').innerHTML = `<details class="bloque"><summary><span>Presupuesto ${anio + 1}</span><span>${eur(totalMes)}/mes</span></summary>
-    <p class="gris">Lo que sueles gastar al mes en cada cosa. Se ajusta solo con lo que vas subiendo.</p>
+    <p class="gris">Tu plan para el año que viene: lo fijo (con tus cambios con fecha), tus topes del día a día y lo puntual que hayas apuntado. Sin los pagos sueltos de este año.</p>
     ${presu.map(([c, v]) => `<div class="cat"><span>${ICO[c] || '•'} ${esc(CATS[c] || c)}</span><b>${eur(v)}/mes <span class="gris">· ${eur(v * 12)}/año</span></b></div>`).join('')}
-    <p style="margin-top:8px">Con lo que ganas${ingreso ? ` (${eur(ingreso)}/mes)` : ''}, en ${anio + 1} te quedarían unos <b>${eur((ingreso - totalMes) * 12)}</b> al año.</p></details>`;
+    <p style="margin-top:8px">Con lo que ganas${ingresoSig ? ` (${eur(ingresoSig)}/mes)` : ''}, en ${sig} te quedarían unos <b>${eur((ingresoSig - totalMes) * 12)}</b> al año.</p></details>`;
 }
 
 async function pintarPapeles() {
