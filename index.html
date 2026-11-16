@@ -134,6 +134,9 @@ html,body{overflow-x:clip}
 .regalos{display:grid;gap:.8rem;margin-top:.2rem}
 @media (min-width:900px){.regalos{grid-template-columns:repeat(3,1fr)}.regalos .regalo{flex-direction:column;align-items:flex-start;justify-content:space-between}.regalos .regalo p{flex:1 1 auto}}
 .herr-arriba{padding-block:0 1.6rem}
+.regalos .dos{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;width:100%;margin-top:auto}
+.regalos .dos .btn{width:100%;text-align:center;justify-content:center;padding:.7rem .6rem;font-size:.95rem;white-space:nowrap}
+.regalos .regalo{gap:1rem}
 .regalo code{font-family:var(--f-mono);font-size:.8rem;background:var(--verde);color:var(--sobre-verde);padding:.2rem .5rem;border-radius:5px;letter-spacing:.06em}
 .contacto{background:var(--verde-h);color:var(--sobre-verde)}
 .contacto .env{padding-block:2.4rem;display:grid;gap:1rem}
@@ -234,15 +237,15 @@ html,body{overflow-x:clip}
     <div class="regalos">
       <div class="regalo">
         <p><b>Papeles en orden.</b> Sube tus facturas, recibos o el Excel de tu banco y se ordenan solos. Te dice cuánto puedes gastar cada semana para llegar a tu meta. <b>15 días gratis.</b></p>
-        <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="papeles/">Pruébala gratis</a><a class="btn fino" href="papeles/?demo=1">Ver cómo funciona</a></span>
+        <span class="dos"><a class="btn" href="papeles/">Pruébala gratis</a><a class="btn fino" href="papeles/?demo=1">Ver cómo funciona</a></span>
       </div>
       <div class="regalo">
         <p><b>Crea tu asistente personal en dos minutos.</b> Respondes cinco preguntas y te llevas las instrucciones para tu chat de inteligencia artificial: te contesta como una asistente que te conoce.</p>
-        <a class="btn" href="asistente/">Entrar o pedir acceso</a>
+        <span class="dos"><a class="btn" href="asistente/">Crear el mío</a><a class="btn fino" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">Versión completa</a></span>
       </div>
       <div class="regalo">
         <p><b>Plantilla gratis «Tu mes en una hoja».</b> Adónde se va tu dinero cada mes, en Excel. ¿Prefieres que te lo miremos? Pulsa <b>ME INTERESA</b>.</p>
-        <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">ME INTERESA</a><a class="btn fino" href="plantillas/Tu_mes_en_una_hoja.xlsx" download>Descargar plantilla</a></span>
+        <span class="dos"><a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">ME INTERESA</a><a class="btn fino" href="plantillas/Tu_mes_en_una_hoja.xlsx" download>Descargar plantilla</a></span>
       </div>
     </div>
   </div></section>
