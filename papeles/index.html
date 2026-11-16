@@ -961,16 +961,29 @@ async function pintarCuentas() {
     const l = g(delMes, k).sort((a, b) => b.fecha.localeCompare(a.fecha));
     return `<details class="bloque"><summary><span>${NOMBRE_GRUPO[k]}</span><span>${eur(suma(l))}</span></summary>${l.map(fila).join('') || '<p class="gris">Nada todavía.</p>'}</details>`;
   }).join('') + `<p class="gris" style="margin-top:8px">Resultado del mes: <b>${eur(suma(g(delMes, 'entra')) - suma(delMes.filter(a => a.tipo === 'g')))}</b></p>`;
-  // topes por partida: la media de los meses anteriores (o lo que va si no hay historia)
+  // topes por partida: los que ella ponga (Mapi, 16/11: «comer fuera 236 €?» — la media del verano no es un presupuesto);
+  // si no pone el suyo, la media de los meses anteriores como referencia
+  const misTopes = cfg.topes || {};
   const topes = CON_TOPE.map(c => {
     const llevas = suma(delMes.filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'));
-    const tope = ant.length ? Math.round(media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'))))) : 0;
-    return {c, llevas, tope};
+    const mediaCat = ant.length ? Math.round(media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'))))) : 0;
+    const suyo = misTopes[c] > 0 ? +misTopes[c] : 0;
+    return {c, llevas, tope: suyo || mediaCat, suyo: !!suyo, mediaCat};
   }).filter(t => t.llevas || t.tope);
-  $('cTopes').innerHTML = '<h3>¿Cómo vas en cada cosa?</h3><p class="gris">Comparado con lo que sueles gastar al mes.</p>' + (topes.map(t => {
+  let avisoTopes = '';
+  if (plan && plan.tope > 0) {
+    const semanalTopes = CON_TOPE.filter(c => !FUERA_SEMANA.includes(c)).reduce((s, c) => s + (misTopes[c] > 0 ? +misTopes[c] : 0), 0) * 12 / 52;
+    if (semanalTopes > plan.tope + 1) avisoTopes = `<p class="aviso mal" style="margin-top:8px">⚠️ Tus topes suman unos ${eur(semanalTopes)} a la semana, y para llegar a tu meta puedes gastar ${eur(Math.floor(plan.tope))}. Baja alguno.</p>`;
+  }
+  $('cTopes').innerHTML = '<h3>¿Cómo vas en cada cosa?</h3><p class="gris">Este mes, comparado con tu tope (o, si no has puesto uno, con lo que sueles gastar).</p>' + (topes.map(t => {
     const pct = t.tope ? t.llevas / t.tope : 0, clase = !t.tope ? 'verde' : pct > 1 ? 'rojo' : pct >= 0.8 ? 'ambar' : 'verde';
-    return `<div class="cat"><div style="flex:1">${ICO[t.c]} ${esc(CATS[t.c])}<div class="barra"><i class="${clase}" style="width:${Math.min(100, Math.round((t.tope ? pct : 1) * 100))}%"></i></div></div><b>${eur(t.llevas)}${t.tope ? ' <span class="gris">/ ' + eur(t.tope) + '</span>' : ''}</b></div>`;
-  }).join('') || '<p class="gris">Aún no hay gastos del día a día este mes.</p>');
+    return `<div class="cat"><div style="flex:1">${ICO[t.c]} ${esc(CATS[t.c])}<div class="barra"><i class="${clase}" style="width:${Math.min(100, Math.round((t.tope ? pct : 1) * 100))}%"></i></div></div><b>${eur(t.llevas)}${t.tope ? ' <span class="gris">/ ' + eur(t.tope) + (t.suyo ? '' : ' (tu media)') + '</span>' : ''}</b></div>`;
+  }).join('') || '<p class="gris">Aún no hay gastos del día a día este mes.</p>') + avisoTopes +
+    `<details class="bloque" style="margin-top:10px"><summary><span>✏️ Poner mis topes al mes</span><span></span></summary>
+      <p class="gris">Lo que quieres gastar como mucho al mes en cada cosa. Si lo dejas en blanco, uso tu media.</p>
+      ${CON_TOPE.map(c => { const t = topes.find(x => x.c === c); return `<label class="campo">${ICO[c]} ${esc(CATS[c])}${t && t.mediaCat ? ` <span class="gris">(tu media: ${eur(t.mediaCat)})</span>` : ''}
+        <input data-tope="${c}" type="number" inputmode="decimal" min="0" step="5" value="${misTopes[c] > 0 ? misTopes[c] : ''}"></label>`; }).join('')}
+      <p><button class="btn" data-accion="guardarTopes">Guardar mis topes</button></p></details>`;
   // gastos hormiga: pequeños (≤ 15 €) del día a día
   const hormiga = delMes.filter(a => a.tipo === 'g' && a.importe <= 15 && HORMIGA_CATS.includes(a.categoria));
   $('cHormiga').innerHTML = `<details class="bloque"><summary><span>🐜 Gastos hormiga (de 15 € o menos)</span><span>${eur(suma(hormiga))}</span></summary>
@@ -1072,9 +1085,16 @@ document.addEventListener('click', async (ev) => {
   if (a === 'guardarCfg') {
     const num = id => { const v = $(id).value.trim(); return v === '' ? undefined : Math.max(id === 'cfgSaldo' ? -1e9 : 0, +v.replace(',', '.')); };
     const r = leerRecuerdos(); const viejo = leerCfg();
-    r._cfg = JSON.stringify({ahorro: viejo.ahorro, objetivo: num('cfgObjetivo'), fecha: $('cfgFecha').value || undefined, saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), t: new Date().toISOString()});
+    r._cfg = JSON.stringify({ahorro: viejo.ahorro, objetivo: num('cfgObjetivo'), fecha: $('cfgFecha').value || undefined, saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), topes: viejo.topes, t: new Date().toISOString()});
     try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
     $('cfgOk').textContent = '✓ Guardado'; setTimeout(() => $('cfgOk').textContent = '', 2500);
+    Sincro.pronto(); pintarCuentas();
+  }
+  if (a === 'guardarTopes') {
+    const topes = {};
+    document.querySelectorAll('[data-tope]').forEach(i => { const v = +String(i.value).replace(',', '.'); if (v > 0) topes[i.dataset.tope] = v; });
+    const r = leerRecuerdos(), c = leerCfg(); c.topes = topes; c.t = new Date().toISOString(); r._cfg = JSON.stringify(c);
+    try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
     Sincro.pronto(); pintarCuentas();
   }
   if (a === 'conectar') {
