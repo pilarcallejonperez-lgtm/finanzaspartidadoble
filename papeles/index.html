@@ -124,8 +124,11 @@ html.pd-cerrado #pd-candado{display:flex}
       <button class="ig" type="submit">Pedir acceso a Mapi</button>
       <div class="mal" id="pd-pide-r" aria-live="polite"></div>
     </form>
-    <p style="margin-top:18px">¿Ya tienes tu código? Escríbelo aquí:</p>
-    <form id="pd-cand-f" autocomplete="off"><input id="pd-cand-i" maxlength="12" aria-label="Código de acceso" placeholder="CÓDIGO"><button>Entrar</button></form>
+    <!-- Mapi (16/11): la casilla del código no se enseña de entrada; quien ya lo tiene, lo abre con el enlace pequeño -->
+    <p style="margin-top:22px;font-size:14px"><a href="#" id="pd-ya-tengo" style="color:#c9a85c">Ya tengo mi código</a></p>
+    <div id="pd-cand-caja" hidden>
+      <form id="pd-cand-f" autocomplete="off"><input id="pd-cand-i" maxlength="12" aria-label="Código de acceso" placeholder="CÓDIGO"><button>Entrar</button></form>
+    </div>
     <div class="mal" id="pd-cand-m" aria-live="polite"></div>
     <small>Partida Doble · Soy tu contable</small>
   </div>
@@ -148,6 +151,7 @@ html.pd-cerrado #pd-candado{display:flex}
     else if(q&&leer())probar(leer(),false).then(function(ok2){if(ok2)fijarEnDireccion(leer())});
     else if(q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo escribiéndome a hola@finanzaspartidadoble.es.';
   });
+  document.getElementById('pd-ya-tengo').addEventListener('click',function(e){e.preventDefault();var k=document.getElementById('pd-cand-caja');k.hidden=!k.hidden;if(!k.hidden)document.getElementById('pd-cand-i').focus()});
   document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();var c=document.getElementById('pd-cand-i').value;probar(c,true).then(function(ok){if(ok)fijarEnDireccion(c.trim().toUpperCase())})});
   // Pedir acceso: va al formulario de Google de Mapi (le llega un aviso a su Gmail)
   var FORM='https://docs.google.com/forms/d/e/1FAIpQLSdLfdFdFOwJrK2ToUpBzywSbEXWThNwZkudjkj5t55Xgy32Ew/formResponse';
@@ -161,7 +165,8 @@ html.pd-cerrado #pd-candado{display:flex}
     // Aviso al móvil de Mapi al momento. Sin nombre ni correo: ese canal es público; los datos van solo al formulario.
     try{fetch('https://ntfy.sh/pdoble-t4dvcvr64gdsc2',{method:'POST',body:'Alguien ha pedido acceso a '+(PAG==='papeles'?'la app Papeles en orden':'Crea tu asistente')+'. Dile a Valentina: «mira las solicitudes».',headers:{'Title':'Nueva solicitud de acceso','Priority':'high','Tags':'bell'}}).catch(function(){})}catch(x){}
     fetch(FORM,{method:'POST',mode:'no-cors',body:datos}).then(function(){
-      document.getElementById('pd-pide').innerHTML='<p class="ok" style="font-size:18px">✓ ¡Recibido, '+n.replace(/[<>&"]/g,'')+'! Te escribo a tu correo con tu acceso.</p>';
+      document.getElementById('pd-pide').innerHTML='<p class="ok" style="font-size:18px">✓ ¡Recibido, '+n.replace(/[<>&"]/g,'')+'! En cuanto lo vea te llegará un correo con un botón para entrar. No tienes que hacer nada más.</p>';
+      var ya=document.getElementById('pd-ya-tengo'); if(ya) ya.parentNode.hidden=true;
     }).catch(function(){b.disabled=false;b.textContent='Pedir acceso a Mapi';r.className='mal';r.textContent='No se ha podido enviar. Comprueba tu conexión y vuelve a probar.'});
   });
 })();
