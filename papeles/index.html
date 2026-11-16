@@ -1121,8 +1121,8 @@ function pintarGuia(cfg, hayDatos) {
   } else if (paso === 3) {
     const cats = [...(P.catsPlan || [])].sort((a, b) => (P.mediasCat[b] || 0) - (P.mediasCat[a] || 0));
     h = cab + `<h3>Esto es lo que pagas cada mes</h3><p class="gris">Casa, recibos, préstamos, coche… He puesto tu media de los últimos meses. Cambia solo lo que vaya a ser distinto.</p>
-      <label class="campo">Lo que te entra al mes <input data-gingreso type="number" inputmode="decimal" min="0" step="10" value="${Math.round(cfg.ingreso > 0 ? cfg.ingreso : (P.ingresoMedia || 0))}"></label>
-      ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <input data-gplan="${c}" type="number" inputmode="decimal" min="0" step="5" value="${Math.round(planCfg[c] != null ? planCfg[c] : (P.mediasCat[c] || 0))}"></label>`).join('') || '<p class="gris">Aún no veo gastos fijos en lo que has subido.</p>'}` + pie;
+      <label class="campo">Lo que te entra al mes <input data-gingreso data-def="${Math.round(cfg.ingreso > 0 ? cfg.ingreso : (P.ingresoMedia || 0))}" type="number" inputmode="decimal" min="0" step="10" value="${Math.round(cfg.ingreso > 0 ? cfg.ingreso : (P.ingresoMedia || 0))}"></label>
+      ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <input data-gplan="${c}" data-def="${Math.round(planCfg[c] != null ? planCfg[c] : (P.mediasCat[c] || 0))}" type="number" inputmode="decimal" min="0" step="5" value="${Math.round(planCfg[c] != null ? planCfg[c] : (P.mediasCat[c] || 0))}"></label>`).join('') || '<p class="gris">Aún no veo gastos fijos en lo que has subido.</p>'}` + pie;
   } else if (paso === 4) {
     const cambios = cfg.cambios || [], punt = cfg.puntuales || [];
     const opciones = ['<option value="ingreso">Lo que me entra</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c)).map(c => `<option value="${c}">${ICO[c] || '•'} ${esc(CATS[c])}</option>`)].join('');
@@ -1215,8 +1215,24 @@ async function pintarCuentas() {
     const vals = ant6.map(k => porCatMes[c][k] || 0), conPago = vals.filter(v => v > 0).length;
     mediasCat[c] = conPago >= Math.ceil(ant6.length * 2 / 3) ? mediana(vals) : media(vals);
   }
-  const ingresoMedia = cfg.ingreso > 0 ? +cfg.ingreso : (ant6.length ? media(ant6.map(k => suma(g(pm[k], 'entra')))) : ingreso);
-  const planCfg = cfg.plan || {}, cambios = cfg.cambios || [], puntuales = cfg.puntuales || [];
+  let ingresoMedia = cfg.ingreso > 0 ? +cfg.ingreso : (ant6.length ? media(ant6.map(k => suma(g(pm[k], 'entra')))) : ingreso);
+  let planCfg = cfg.plan || {};
+  const cambios = cfg.cambios || [], puntuales = cfg.puntuales || [];
+  // Arreglo 16/11 (Mapi: «35 € a la semana no es real»): la guía guardaba en «Tu plan» las medias tal cual, y con el cálculo
+  // antiguo (que repetía pagos sueltos) se quedaban congeladas. Si una cifra guardada es justo la media antigua, no la puso
+  // ella: se quita y vale el cálculo nuevo. Lo que ella cambió a mano se respeta. Se hace una sola vez (planV2).
+  if (!cfg.planV2 && ant6.length) {
+    const viejo = {};
+    for (const k of ant6) for (const a of pm[k]) if (a.tipo === 'g' && !enSemana(a)) viejo[a.categoria] = (viejo[a.categoria] || 0) + a.importe / ant6.length;
+    const ingViejo = Math.round(media(ant6.map(k => suma(g(pm[k], 'entra')))));
+    const limpio = {};
+    for (const c in planCfg) if (Math.round(+planCfg[c]) !== Math.round(viejo[c] || 0)) limpio[c] = planCfg[c];
+    const nuevoCfg = Object.assign({}, cfg, {plan: limpio, planV2: true});
+    if (cfg.ingreso > 0 && Math.round(+cfg.ingreso) === ingViejo) delete nuevoCfg.ingreso;
+    try { const r = leerRecuerdos(); r._cfg = JSON.stringify(nuevoCfg); localStorage.setItem(RK, JSON.stringify(r)); } catch (e) {}
+    try { Sincro.pronto(); } catch (e) {}
+    planCfg = limpio; if (nuevoCfg.ingreso == null) { cfg.ingreso = undefined; ingresoMedia = media(ant6.map(k => suma(g(pm[k], 'entra')))); }
+  }
   const catsPlan = [...new Set([...Object.keys(mediasCat), ...Object.keys(planCfg), ...cambios.map(c => c.cat).filter(c => c !== 'ingreso')])].filter(c => CATS[c]);
   const valorMes = (cat, ym) => {                       // lo previsto para esa categoría en ese mes
     const c = cambios.filter(x => x.cat === cat && x.desde <= ym).sort((a, b) => b.desde.localeCompare(a.desde))[0];
@@ -1433,9 +1449,10 @@ document.addEventListener('click', async (ev) => {
     }
     if (GUIA_PASO === 3) {
       const plan = Object.assign({}, leerCfg().plan || {});
-      document.querySelectorAll('[data-gplan]').forEach(i => { const v = n(i.value); if (!isNaN(v) && v >= 0) plan[i.dataset.gplan] = v; });
-      const ing = n(document.querySelector('[data-gingreso]').value);
-      GUIA_PASO = 4; guardarCfgParcial({plan, ingreso: ing > 0 ? ing : undefined}); return;
+      // solo se guarda lo que ella cambia; lo que deja como estaba sigue al cálculo (y se actualiza con lo que suba)
+      document.querySelectorAll('[data-gplan]').forEach(i => { const v = n(i.value); if (!isNaN(v) && v >= 0 && v !== +i.dataset.def) plan[i.dataset.gplan] = v; });
+      const gi = document.querySelector('[data-gingreso]'), ing = n(gi.value), cfgAhora = leerCfg();
+      GUIA_PASO = 4; guardarCfgParcial({plan, planV2: true, ingreso: ing > 0 && ing !== +gi.dataset.def ? ing : cfgAhora.ingreso}); return;
     }
     if (GUIA_PASO === 4) { GUIA_PASO = 5; pintarCuentas(); return; }
   }
