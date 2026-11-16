@@ -140,9 +140,15 @@ html.pd-cerrado #pd-candado{display:flex}
   function abrir(){raiz.classList.remove('pd-cerrado')}
   function probar(c,aviso){if(!c)return Promise.resolve(false);return huella(c).then(function(x){if(OK.indexOf(x)>=0){guardar(c.trim().toUpperCase());abrir();return true}if(aviso)document.getElementById('pd-cand-m').textContent='Ese código no vale. Pídeme el tuyo por Instagram.';return false})}
   var url=new URL(location.href), q=url.searchParams.get('c');
-  if(q){url.searchParams.delete('c');history.replaceState(null,'',url.pathname+url.search+url.hash)}
-  probar(q||leer(),false).then(function(ok){if(!ok&&q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo por Instagram.'});
-  document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();probar(document.getElementById('pd-cand-i').value,true)});
+  // El código SE QUEDA en la dirección (Mapi, 16/11: «me pide acceso, se lo doy y luego me vuelve a pedir acceso»):
+  // si se quitaba, el icono de la pantalla de inicio (que guarda la dirección y tiene su propio almacén) lo perdía.
+  function fijarEnDireccion(c){try{var u=new URL(location.href);if(u.searchParams.get('c')!==c){u.searchParams.set('c',c);history.replaceState(null,'',u.pathname+u.search+u.hash)}}catch(e){}}
+  probar(q||leer(),false).then(function(ok){
+    if(ok)fijarEnDireccion((q||leer()).trim().toUpperCase());
+    else if(q&&leer())probar(leer(),false).then(function(ok2){if(ok2)fijarEnDireccion(leer())});
+    else if(q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo escribiéndome a hola@finanzaspartidadoble.es.';
+  });
+  document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();var c=document.getElementById('pd-cand-i').value;probar(c,true).then(function(ok){if(ok)fijarEnDireccion(c.trim().toUpperCase())})});
   // Pedir acceso: va al formulario de Google de Mapi (le llega un aviso a su Gmail)
   var FORM='https://docs.google.com/forms/d/e/1FAIpQLSdLfdFdFOwJrK2ToUpBzywSbEXWThNwZkudjkj5t55Xgy32Ew/formResponse';
   document.getElementById('pd-pide').addEventListener('submit',function(e){
