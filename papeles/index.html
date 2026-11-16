@@ -11,14 +11,17 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icono-192.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 :root{
   --verde:#1f4535; --verde-2:#2a5a46; --verde-claro:#e3ebe5;
   --oro:#c9a85c; --oro-claro:#f1e4c2;
   --fondo:#f3ecdf; --papel:#fbf7ef; --linea:#dccfb4; --tinta:#1f2a24; --tinta-2:#5b5446;
   --gasto:#b3322b; --aviso:#a8741a; --ok:#1e7a46;
-  --f-tit: Georgia, 'Times New Roman', serif;
-  --f-txt: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --f-tit: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --f-txt: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, monospace; --oro-texto:#a8853f;
   --nav:68px; color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -90,6 +93,33 @@ table.anio tr.prev td{color:var(--tinta-2);font-style:italic}
 .bloque summary::-webkit-details-marker{display:none}
 .scroll-x{overflow-x:auto}
 @media (min-width:900px){ main{padding-top:24px} }
+
+/* Diseño elegante (16/11/2026, a juego con la web): iconos de línea, etiquetas doradas, sin emojis */
+svg.i{width:1.15em;height:1.15em;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;flex:none}
+nav button span{font-size:0;line-height:0}
+nav button span svg.i{width:23px;height:23px}
+nav button.on span svg.i{stroke-width:2}
+nav button{letter-spacing:.02em}
+.papel .ico{background:var(--verde);color:var(--oro-claro);border-radius:12px}
+.papel .ico svg.i{width:20px;height:20px}
+.cat svg.i{color:var(--oro-texto);margin-right:.35em}
+.subir .icono-grande svg.i{width:40px;height:40px;color:var(--oro-texto);stroke-width:1.3}
+h2{font-size:1.6rem;letter-spacing:-.005em}
+h3{font-size:1.15rem}
+.tarjeta{border-radius:16px;box-shadow:0 1px 2px #1f453510}
+.destacada{box-shadow:0 8px 24px #1f453522}
+.prueba{background:transparent;border:0;border-left:3px solid var(--oro);border-radius:0;padding:4px 12px;color:var(--tinta-2);font-size:.82rem}
+.aviso{border-radius:12px;border-left:3px solid var(--verde)}
+.aviso.rep{border-left-color:var(--oro)} .aviso.mal{border-left-color:var(--gasto)}
+.etiqueta-oro{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--oro-texto)}
+.destacada .etiqueta-oro{color:var(--oro)}
+header small{font-family:var(--f-mono);letter-spacing:.16em}
+main a{color:var(--verde);text-underline-offset:3px}
+/* Números formales (Mapi: «los números parecen de dibujo de niños»): cifras rectas y alineadas, nunca las de estilo antiguo */
+body,h1,h2,h3,b,.imp{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1,"tnum" 1}
+.grande{font-family:var(--f-txt);font-weight:600;letter-spacing:-.02em;font-size:2.5rem}
+.destacada .grande{color:#fff}
+.destacada a{color:var(--oro-claro)}
 </style>
 </head>
 <body>
@@ -192,7 +222,7 @@ html.pd-cerrado #pd-candado{display:flex}
 </header>
 
 <main>
-  <p class="prueba">🧪 <b>Versión de prueba.</b> Tus papeles viajan cifrados entre tus dispositivos: solo tú puedes verlos. <span id="estadoSync" class="gris"></span></p>
+  <p class="prueba"><b>Versión de prueba.</b> Tus papeles viajan cifrados entre tus dispositivos: solo tú puedes verlos. <span id="estadoSync" class="gris"></span></p>
 
   <!-- INICIO -->
   <section id="v-inicio">
@@ -202,13 +232,13 @@ html.pd-cerrado #pd-candado{display:flex}
       <p class="gris" id="gastoCuantos"></p>
     </div>
     <div class="tarjeta" id="bienvenida" hidden>
-      <h3>¡Hola! 👋</h3>
+      <h3>¡Hola!</h3>
       <p>Sube tus facturas, recibos o fotos de tickets y yo los leo y los ordeno solos. No tienes que elegir nada.</p>
       <p class="gris">Las que te llegan por correo, guárdalas en PDF y súbelas también: la app solo ve lo que tú subes.</p>
-      <p><button class="btn" data-ir="subir">📎 Subir mi primer papel</button></p>
+      <p><button class="btn" data-ir="subir">Subir mi primer papel</button></p>
       <p><button class="enlace" data-accion="demo">O mira cómo queda con una familia de ejemplo</button></p>
     </div>
-    <div class="tarjeta" id="enDuda" hidden><h3>🤔 ¿Qué es esto?</h3><p class="gris">Dímelo una vez y lo recuerdo para la próxima.</p><div id="listaDuda"></div></div>
+    <div class="tarjeta" id="enDuda" hidden><h3>¿Qué es esto?</h3><p class="gris">Dímelo una vez y lo recuerdo para la próxima.</p><div id="listaDuda"></div></div>
     <div class="tarjeta" id="porCat" hidden><h3>¿En qué se va?</h3><div id="listaCat"></div></div>
     <div class="tarjeta" id="proximos" hidden><h3>Vencimientos que vienen</h3><div id="listaVenc"></div></div>
     <div class="tarjeta" id="ultimos" hidden><h3>Lo último</h3><div id="listaUlt"></div></div>
@@ -218,13 +248,13 @@ html.pd-cerrado #pd-candado{display:flex}
   <section id="v-subir" hidden>
     <h2>Subir papeles</h2>
     <label class="subir">
-      <span style="font-size:2.4rem">📎</span>
+      <span class="icono-grande"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5 12 19.5a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17.5a2 2 0 0 1-3-3L14.5 7"/></svg></span>
       <b>Toca para subir una factura o una foto</b>
       <span class="gris">PDF, foto o el Excel de movimientos de tu banco. Puedes elegir varios a la vez.</span>
       <input type="file" id="archivos" accept="application/pdf,image/*,.xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" multiple>
     </label>
-    <div class="aviso" style="margin-top:12px">🏦 <b>¿Quieres meter todo el año de golpe?</b> En la web o la app de tu banco, ve a «Movimientos», elige desde el 1 de enero y dale a «Descargar» o «Exportar» en Excel. Sube aquí ese archivo y apunto todos los movimientos de una vez.</div>
-    <div class="aviso" style="margin-top:12px">📧 <b>Las facturas que te llegan por correo</b> (luz, teléfono, seguros…): ábrelas, guarda el PDF y súbelo aquí. La app no entra en tu correo: solo ve lo que tú subes.</div>
+    <div class="aviso" style="margin-top:12px"><b>¿Quieres meter todo el año de golpe?</b> En la web o la app de tu banco, ve a «Movimientos», elige desde el 1 de enero y dale a «Descargar» o «Exportar» en Excel. Sube aquí ese archivo y apunto todos los movimientos de una vez.</div>
+    <div class="aviso" style="margin-top:12px"><b>Las facturas que te llegan por correo</b> (luz, teléfono, seguros…): ábrelas, guarda el PDF y súbelo aquí. La app no entra en tu correo: solo ve lo que tú subes.</div>
     <div id="resultados" aria-live="polite"></div>
     <p class="gris" style="margin-top:12px">La primera vez tarda un poco más, porque preparo el lector. Después va rápido.</p>
   </section>
@@ -265,7 +295,7 @@ html.pd-cerrado #pd-candado{display:flex}
     <div class="tarjeta">
       <h3>Tu plan, paso a paso</h3>
       <p class="gris">Te llevo de la mano: cuánto tienes, qué quieres conseguir, qué pagas cada mes y cuánto puedes gastar a la semana.</p>
-      <p><button class="btn" data-accion="abrirGuia">🧭 Preparar mi plan</button></p>
+      <p><button class="btn" data-accion="abrirGuia">Preparar mi plan</button></p>
     </div>
     <div class="tarjeta">
       <h3>Familia de ejemplo</h3>
@@ -275,7 +305,7 @@ html.pd-cerrado #pd-candado{display:flex}
     <div class="tarjeta" id="tarjetaDisp">
       <h3>Tus dispositivos</h3>
       <p class="gris">Conecta tu móvil, tu Mac o tu ordenador y verás los mismos papeles en todos. Lo que subas en uno aparece en los demás.</p>
-      <p><button class="btn" data-accion="conectar">📲 Conectar otro dispositivo</button></p>
+      <p><button class="btn" data-accion="conectar">Conectar otro dispositivo</button></p>
       <div id="cajaConectar" hidden>
         <p><b>En el otro dispositivo</b>, escanea este código con la cámara o abre el enlace:</p>
         <div id="qrConectar" style="max-width:240px;background:#fff;padding:10px;border-radius:12px"></div>
@@ -296,16 +326,16 @@ html.pd-cerrado #pd-candado{display:flex}
       <p class="aviso" id="confirmarBorrar" hidden>¿Seguro? Se borran todos tus papeles en todos tus dispositivos conectados.
         <button class="btn" data-accion="borrarSi" style="margin-top:8px">Sí, borrar todo</button></p>
     </div>
-    <p class="gris">¿Algo raro? Haz una captura de pantalla y mándasela a Mapi. 😊</p>
+    <p class="gris">¿Algo raro? Haz una captura de pantalla y mándasela a Mapi.</p>
   </section>
 </main>
 
 <nav>
-  <button data-ir="inicio" class="on"><span>🏠</span>Inicio</button>
-  <button data-ir="cuentas"><span>📊</span>Cuentas</button>
-  <button data-ir="papeles"><span>📁</span>Papeles</button>
-  <button data-ir="subir"><span>📎</span>Subir</button>
-  <button data-ir="ajustes"><span>⚙️</span>Ajustes</button>
+  <button data-ir="inicio" class="on"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Inicio</button>
+  <button data-ir="cuentas"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-8M21 20H3"/></svg></span>Cuentas</button>
+  <button data-ir="papeles"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span>Papeles</button>
+  <button data-ir="subir"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg></span>Subir</button>
+  <button data-ir="ajustes"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4"/></svg></span>Ajustes</button>
 </nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -324,10 +354,9 @@ const CATS = {luz:'Luz', agua:'Agua', gas:'Gas', telefono:'Teléfono e internet'
   suscripciones:'Suscripciones', impuestos:'Impuestos y tasas', super:'Súper y comida', restaurantes:'Comer fuera',
   ropa:'Ropa', compras:'Compras', ocio:'Ocio y caprichos', otros:'Otros', revisar:'Por revisar', banco:'Banco', duda:'En duda', ingreso:'Ingresos'};
 const CATS_ELEGIR = Object.keys(CATS).filter(k => !['revisar', 'banco', 'duda', 'ingreso'].includes(k));
-const ICO = {luz:'💡', agua:'🚿', gas:'🔥', telefono:'📱', seguros:'🛡️', colegio:'🎒', comunidad:'🏢', vivienda:'🏠', coche:'🚗',
-  financiacion:'💳', belleza:'💄',
-  transporte:'🚌', salud:'🩺', suscripciones:'📺', impuestos:'🏛️', super:'🛒', restaurantes:'🍽️', ropa:'👗', compras:'🛍️',
-  ocio:'🎉', otros:'📄', revisar:'❓', banco:'🏦', duda:'🤔', ingreso:'💶'};
+const ICON_PATHS = {"inicio": "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z", "cuentas": "M4 20V11M10 20V5M16 20v-8M21 20H3", "papeles": "M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z", "subir": "M12 16V4M7 9l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4", "ajustes": "M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4", "clip": "M20 11.5 12 19.5a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17.5a2 2 0 0 1-3-3L14.5 7", "luz": "M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z", "agua": "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z", "gas": "M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3 0-5 1-8.5z", "telefono": "M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2", "seguros": "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z", "colegio": "M3 8l9-4 9 4-9 4zM7 10v5c0 1.5 2.5 3 5 3s5-1.5 5-3v-5M21 8v6", "comunidad": "M4 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M16 9h3a1 1 0 0 1 1 1v11M2 21h20M8 7h4M8 11h4M8 15h4", "vivienda": "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z", "coche": "M5 17h14M4 17v-4l2-5a2 2 0 0 1 2-1h8a2 2 0 0 1 2 1l2 5v4M7 20a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17 20a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM4 13h16", "financiacion": "M3 6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 10h18M7 15h3", "belleza": "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z", "transporte": "M6 3h12a2 2 0 0 1 2 2v11H4V5a2 2 0 0 1 2-2zM4 11h16M7 19v2M17 19v2M4 16v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2", "salud": "M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10zM9 11h6M12 8v6", "suscripciones": "M4 5h16v12H4zM8 21h8M10.5 8.5l4 2.5-4 2.5z", "impuestos": "M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18", "super": "M3 4h2l2.2 11h10.6L20 8H6.4M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z", "restaurantes": "M7 3v18M5 3v5a2 2 0 0 0 4 0V3M17 3c-2 2-2.5 6 0 8v10", "ropa": "M8 3l4 2 4-2 5 4-3 3-2-1v12H8V9l-2 1-3-3z", "compras": "M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2", "ocio": "M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4zM14 7v10", "otros": "M6 3h8l4 4v14H6zM14 3v4h4", "revisar": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6M12 16.5h.01", "banco": "M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18", "duda": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.6 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6M12 16.5h.01", "ingreso": "M12 4v11M7 10l5 5 5-5M5 20h14"};
+const icono = k => '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="' + (ICON_PATHS[k] || ICON_PATHS.otros) + '"/></svg>';
+const ICO = new Proxy({}, {get: (o, k) => typeof k === 'string' ? icono(k) : undefined});
 const SIN_IMPORTE = ['poliza', 'presupuesto', 'contrato', 'garantia'];
 // Modo «Ver cómo funciona» (?demo=1): su propio almacén y sus propios ajustes, sin nube y sin subir nada
 const DEMO = !!window.PD_DEMO;
@@ -813,7 +842,7 @@ function filaMov(m) {
 function filaCaptura(p, conCambiar) {
   const movs = p.movs || [], g = movs.filter(m => m.tipo === 'g').length, i = movs.length - g, dudas = movs.filter(m => m.categoria === 'duda').length;
   return `<div class="papel">
-    <div class="ico">🏦</div>
+    <div class="ico">${ICO.banco}</div>
     <div class="txt"><b>Captura del banco</b>
       <span class="gris">${fechaTxt(p.fecha)} · ${movs.length} movimientos (${g} gastos${i ? ', ' + i + ' ingresos' : ''})</span><br>
       ${dudas ? `<span class="etq rev">${dudas} en duda</span>` : '<span class="etq">Apuntado</span>'}
@@ -828,7 +857,7 @@ function filaPapel(p, conCambiar) {
   const sel = conCambiar ? `<div class="cambio" hidden><select class="cambiar" data-cat="${p.id}" aria-label="Categoría">${
     CATS_ELEGIR.map(k => [k, CATS[k]]).map(([k, n]) => `<option value="${k}" ${k === p.categoria ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>` : '';
   return `<div class="papel">
-    <div class="ico">${ICO[p.categoria] || '📄'}</div>
+    <div class="ico">${ICO[p.categoria] || ''}</div>
     <div class="txt"><b>${esc(p.concepto)}</b>
       <span class="gris">${esc([p.emisor, fechaTxt(p.fecha)].filter(Boolean).join(' · '))}</span><br>${etq}${p.demo ? ' <span class="etq">ejemplo</span>' : ''}
       ${conCambiar ? `<br>${(p.blob || !p.demo) ? `<button class="enlace" data-ver="${p.id}">Verlo</button> · ` : ''}<button class="enlace" data-mostrar="${p.id}">¿Está mal? Cambiar</button>` : ''}
@@ -860,7 +889,7 @@ async function pintarInicio() {
   const lim = new Date(); lim.setDate(lim.getDate() + 60); const limISO = lim.toISOString().slice(0, 10);
   const venc = ps.filter(p => p.vencimiento && p.vencimiento >= hoyISO() && p.vencimiento <= limISO).sort((a, b) => a.vencimiento.localeCompare(b.vencimiento));
   $('proximos').hidden = !venc.length;
-  $('listaVenc').innerHTML = venc.map(p => `<div class="cat"><span>${ICO[p.categoria] || '📄'} ${esc(p.concepto)}${p.emisor ? ' · ' + esc(p.emisor) : ''}</span><b>${fechaTxt(p.vencimiento)}</b></div>`).join('');
+  $('listaVenc').innerHTML = venc.map(p => `<div class="cat"><span>${ICO[p.categoria] || ''} ${esc(p.concepto)}${p.emisor ? ' · ' + esc(p.emisor) : ''}</span><b>${fechaTxt(p.vencimiento)}</b></div>`).join('');
   const ult = [...ps].sort((a, b) => b.creado.localeCompare(a.creado)).slice(0, 5);
   $('ultimos').hidden = !ult.length;
   $('listaUlt').innerHTML = ult.map(p => filaPapel(p, false)).join('');
@@ -917,7 +946,7 @@ function grupoDe(a) {
   if (EXTRA.includes(a.categoria) || a.importe >= 250) return 'extra';
   return 'dia';
 }
-const NOMBRE_GRUPO = {entra: '💶 Entra', fijos: '🏠 Gastos fijos', dia: '🛒 Día a día', extra: '✨ Extraordinarios'};
+const NOMBRE_GRUPO = {entra: 'Entra', fijos: 'Gastos fijos', dia: 'Día a día', extra: 'Extraordinarios'};
 const mesDe = f => f.slice(0, 7);
 const nombreMes = (ym, largo) => new Date(ym + '-15T12:00').toLocaleDateString('es-ES', {month: largo ? 'long' : 'short'});
 function porMes(lista) { const m = {}; for (const a of lista) { const k = mesDe(a.fecha); (m[k] = m[k] || []).push(a); } return m; }
@@ -968,8 +997,8 @@ function pintarSemana(lista, cfg, plan) {
     <div style="background:rgba(255,255,255,.25);border-radius:6px;height:8px;margin:8px 0"><div style="width:${pct}%;height:8px;border-radius:6px;background:${quedan >= 0 ? '#c9a961' : '#e07a5f'}"></div></div>
     <p class="gris" style="font-size:.85rem">Llevas ${eur(gastado)} de ${eur(tope)} · comida ${eur(comida)} · resto ${eur(gastado - comida)}</p>
     <p class="gris" style="font-size:.85rem">${plan
-      ? `🎯 Para llegar al ${fechaLarga(plan.fin)} con <b>${eur(plan.objetivo)}</b>, puedes gastar <b>${eur(tope)} a la semana</b> en comida y día a día. (Según tu plan: entran ${eur(plan.ingresoMedia)}/mes y el resto de gastos son ${eur(plan.fijosMedia)}/mes. Lo cambias abajo, en «Tu plan».)`
-      : '🎯 Pon abajo, en «Tu meta», con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana. Mientras, uso la media de tus últimas semanas.'}</p>
+      ? `Para llegar al ${fechaLarga(plan.fin)} con <b>${eur(plan.objetivo)}</b>, puedes gastar <b>${eur(tope)} a la semana</b> en comida y día a día. (Según tu plan: entran ${eur(plan.ingresoMedia)}/mes y el resto de gastos son ${eur(plan.fijosMedia)}/mes. Lo cambias abajo, en «Tu plan».)`
+      : 'Pon abajo, en «Tu meta», con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana. Mientras, uso la media de tus últimas semanas.'}</p>
     ${historia ? `<p class="gris" style="font-size:.85rem;margin-top:6px">${historia}</p>` : ''}`;
 }
 
@@ -979,24 +1008,24 @@ function pintarPlan(cfg) {
   if (!P) { caja.hidden = true; return; }
   const planCfg = cfg.plan || {}, cambios = cfg.cambios || [], puntuales = cfg.puntuales || [];
   const cats = [...P.catsPlan].sort((a, b) => (P.mediasCat[b] || 0) - (P.mediasCat[a] || 0));
-  const opciones = ['<option value="ingreso">💶 Lo que entra al mes</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c))
+  const opciones = ['<option value="ingreso">Lo que entra al mes</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c))
     .map(c => `<option value="${c}">${ICO[c] || '•'} ${esc(CATS[c])}</option>`)].join('');
   caja.hidden = false;
-  caja.innerHTML = `<details class="bloque"><summary><span>📋 Tu plan: lo que esperas cada mes</span><span></span></summary>
+  caja.innerHTML = `<details class="bloque"><summary><span>Tu plan: lo que esperas cada mes</span><span></span></summary>
     <p class="gris">Todo lo que no va en la semana: casa, recibos, coche, préstamos, viajes… Empieza con tu media de los últimos 6 meses. Cambia lo que sepas que va a ser distinto y la meta se recalcula.</p>
-    <label class="campo">💶 Lo que entra al mes <span class="gris">(tu media: ${eur(P.ingresoMedia)})</span>
+    <label class="campo">Lo que entra al mes <span class="gris">(tu media: ${eur(P.ingresoMedia)})</span>
       <input data-plan-ingreso type="number" inputmode="decimal" min="0" step="10" value="${cfg.ingreso > 0 ? cfg.ingreso : ''}" placeholder="${Math.round(P.ingresoMedia)}"></label>
     ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <span class="gris">(tu media: ${eur(P.mediasCat[c] || 0)})</span>
       <input data-plan="${c}" type="number" inputmode="decimal" min="0" step="5" value="${planCfg[c] != null ? planCfg[c] : ''}" placeholder="${Math.round(P.mediasCat[c] || 0)}"></label>`).join('')}
     <p><button class="btn" data-accion="guardarPlan">Guardar mi plan</button></p>
-    <h3 style="margin-top:14px">📅 Cambios con fecha</h3>
+    <h3 style="margin-top:14px">Cambios con fecha</h3>
     <p class="gris">Por ejemplo: «desde febrero, el alquiler pasa a 730 €» o «desde enero, la nómina pasa a 2.000 €».</p>
-    ${cambios.length ? cambios.map((c, i) => `<div class="cat"><span>Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? '💶 Lo que entra' : (ICO[c.cat] || '•') + ' ' + esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</span><button class="btn sec" data-accion="borrarCambio" data-i="${i}">✕</button></div>`).join('') : '<p class="gris">Ninguno todavía.</p>'}
+    ${cambios.length ? cambios.map((c, i) => `<div class="cat"><span>Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? 'Lo que entra' : (ICO[c.cat] || '•') + ' ' + esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</span><button class="btn sec" data-accion="borrarCambio" data-i="${i}">✕</button></div>`).join('') : '<p class="gris">Ninguno todavía.</p>'}
     <label class="campo">Qué cambia <select id="nuevoCat" class="buscar">${opciones}</select></label>
     <label class="campo">Desde <input id="nuevoDesde" type="month" min="${P.mes}"></label>
     <label class="campo">Nuevo importe al mes <input id="nuevoImporte" type="number" inputmode="decimal" min="0" step="5"></label>
     <p><button class="btn sec" data-accion="addCambio">Añadir cambio</button></p>
-    <h3 style="margin-top:14px">📌 Gastos o ingresos puntuales</h3>
+    <h3 style="margin-top:14px">Gastos o ingresos puntuales</h3>
     <p class="gris">Algo que pasará una sola vez: un viaje, la mudanza, la paga extra…</p>
     ${puntuales.length ? puntuales.map((p, i) => `<div class="cat"><span>${mesTxt(p.mes)}: ${esc(p.nombre || (p.tipo === 'i' ? 'Ingreso' : 'Gasto'))} <b>${p.tipo === 'i' ? '+' : '−'}${eur(+p.importe)}</b></span><button class="btn sec" data-accion="borrarPuntual" data-i="${i}">✕</button></div>`).join('') : '<p class="gris">Ninguno todavía.</p>'}
     <label class="campo">Qué es <input id="puntNombre" class="buscar" placeholder="Por ejemplo, viaje a Lisboa"></label>
@@ -1019,13 +1048,13 @@ function pintarGuia(cfg, hayDatos) {
   const P = window.__plan || {}, paso = GUIA_PASO, planCfg = cfg.plan || {};
   const pie = `<p style="margin-top:12px">${paso > 1 ? '<button class="btn sec" data-accion="guiaAtras">← Atrás</button> ' : ''}${paso >= 1 && paso <= 4 ? '<button class="btn" data-accion="guiaSig">Siguiente →</button>' : ''}</p>
     <p><button class="enlace" data-accion="guiaSaltar" style="background:none;border:0;padding:0;text-decoration:underline;color:inherit">Ahora no, lo haré más tarde</button></p>`;
-  const cab = `<p class="gris">🧭 Tu plan · paso ${Math.max(1, paso)} de 5</p>`;
+  const cab = `<p class="gris">Tu plan · paso ${Math.max(1, paso)} de 5</p>`;
   let h = '';
   if (paso === 0) {
-    h = `<p class="gris">🧭 Tu plan · antes de empezar</p><h3>Primero, tus movimientos</h3>
+    h = `<p class="gris">Tu plan · antes de empezar</p><h3>Primero, tus movimientos</h3>
       <p>Para decirte cuánto puedes gastar, necesito ver en qué se te va el dinero.</p>
       <p>Lo más rápido: en la web o la app de tu banco, entra en «Movimientos», elige desde el 1 de enero y dale a «Descargar» o «Exportar» en Excel. Luego súbelo aquí. También valen capturas de pantalla de los movimientos.</p>
-      <p><button class="btn oro" data-ir="subir">📎 Subir mis movimientos</button></p>
+      <p><button class="btn oro" data-ir="subir">Subir mis movimientos</button></p>
       <p><button class="enlace" data-accion="guiaSaltar" style="background:none;border:0;padding:0;text-decoration:underline;color:inherit">Ahora no, lo haré más tarde</button></p>`;
   } else if (paso === 1) {
     h = cab + `<h3>¿Cuánto tienes hoy en el banco?</h3><p class="gris">Suma lo de todas tus cuentas. Es para saber desde dónde partes; no sale de este móvil más que cifrado.</p>
@@ -1038,20 +1067,20 @@ function pintarGuia(cfg, hayDatos) {
   } else if (paso === 3) {
     const cats = [...(P.catsPlan || [])].sort((a, b) => (P.mediasCat[b] || 0) - (P.mediasCat[a] || 0));
     h = cab + `<h3>Esto es lo que pagas cada mes</h3><p class="gris">Casa, recibos, préstamos, coche… He puesto tu media de los últimos meses. Cambia solo lo que vaya a ser distinto.</p>
-      <label class="campo">💶 Lo que te entra al mes <input data-gingreso type="number" inputmode="decimal" min="0" step="10" value="${Math.round(cfg.ingreso > 0 ? cfg.ingreso : (P.ingresoMedia || 0))}"></label>
+      <label class="campo">Lo que te entra al mes <input data-gingreso type="number" inputmode="decimal" min="0" step="10" value="${Math.round(cfg.ingreso > 0 ? cfg.ingreso : (P.ingresoMedia || 0))}"></label>
       ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <input data-gplan="${c}" type="number" inputmode="decimal" min="0" step="5" value="${Math.round(planCfg[c] != null ? planCfg[c] : (P.mediasCat[c] || 0))}"></label>`).join('') || '<p class="gris">Aún no veo gastos fijos en lo que has subido.</p>'}` + pie;
   } else if (paso === 4) {
     const cambios = cfg.cambios || [], punt = cfg.puntuales || [];
-    const opciones = ['<option value="ingreso">💶 Lo que me entra</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c)).map(c => `<option value="${c}">${ICO[c] || '•'} ${esc(CATS[c])}</option>`)].join('');
+    const opciones = ['<option value="ingreso">Lo que me entra</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c)).map(c => `<option value="${c}">${ICO[c] || '•'} ${esc(CATS[c])}</option>`)].join('');
     h = cab + `<h3>¿Va a cambiar algo?</h3><p class="gris">Si sabes que algo va a ser distinto (te mudas, cambia tu nómina, tienes un viaje…), apúntalo. Si no, dale a «Siguiente».</p>
-      ${cambios.map(c => `<p>📅 Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? 'lo que entra' : esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</p>`).join('')}
-      ${punt.map(p => `<p>📌 ${mesTxt(p.mes)}: ${esc(p.nombre)} <b>${p.tipo === 'i' ? '+' : '−'}${eur(+p.importe)}</b></p>`).join('')}
-      <details class="bloque"><summary><span>📅 Algo que cambia cada mes desde una fecha</span><span></span></summary>
+      ${cambios.map(c => `<p>Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? 'lo que entra' : esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</p>`).join('')}
+      ${punt.map(p => `<p>${mesTxt(p.mes)}: ${esc(p.nombre)} <b>${p.tipo === 'i' ? '+' : '−'}${eur(+p.importe)}</b></p>`).join('')}
+      <details class="bloque"><summary><span>Algo que cambia cada mes desde una fecha</span><span></span></summary>
         <label class="campo">Qué <select id="gCat" class="buscar">${opciones}</select></label>
         <label class="campo">Desde <input id="gDesde" type="month"></label>
         <label class="campo">Nuevo importe al mes <input id="gImp" type="number" inputmode="decimal" min="0" step="5"></label>
         <p><button class="btn sec" data-accion="guiaAddCambio">Añadir</button></p></details>
-      <details class="bloque"><summary><span>📌 Un gasto o ingreso de una sola vez</span><span></span></summary>
+      <details class="bloque"><summary><span>Un gasto o ingreso de una sola vez</span><span></span></summary>
         <label class="campo">Qué es <input id="gPNom" class="buscar" placeholder="Por ejemplo, viaje, mudanza, paga extra"></label>
         <label class="campo">Cuándo <input id="gPMes" type="month"></label>
         <label class="campo">Importe <input id="gPImp" type="number" inputmode="decimal" min="0" step="10"></label>
@@ -1068,7 +1097,7 @@ function pintarGuia(cfg, hayDatos) {
       const cats = Object.keys(REPARTO_BASE), tot = cats.reduce((s, c) => s + (ms[c] || 0), 0);
       // 70 % según en qué suele gastar ella y 30 % un reparto base, para que ninguna cosa se quede a 0
       const reparto = {}; for (const c of cats) reparto[c] = Math.max(0, Math.round(mesTope * (tot > 0 ? 0.7 * (ms[c] || 0) / tot + 0.3 * REPARTO_BASE[c] : REPARTO_BASE[c]) / 5) * 5);
-      h = cab + `<h3>🎯 Puedes gastar ${eur(tope)} a la semana</h3>
+      h = cab + `<h3>Puedes gastar ${eur(tope)} a la semana</h3>
         <p>Para llegar al ${plan.fin.toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})} con <b>${eur(plan.objetivo)}</b>, tu tope para comida y día a día es de <b>${eur(tope)} a la semana</b> (unos ${eur(mesTope)} al mes).</p>
         <p class="gris">Te propongo este reparto al mes, según en qué sueles gastar. Cámbialo si quieres:</p>
         ${cats.map(c => `<label class="campo">${ICO[c]} ${esc(CATS[c])} <input data-gtope="${c}" type="number" inputmode="decimal" min="0" step="5" value="${reparto[c]}"></label>`).join('')}
@@ -1100,7 +1129,7 @@ async function pintarCuentas() {
     for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu', 'cSemana', 'cPlan']) $(id).hidden = true;
     $('cQueda').hidden = false;
     setTimeout(() => pintarGuia(cfg, false), 0);
-    $('cQueda').innerHTML = '<h3>Aquí verás cuánto te queda</h3><p>Sube tus facturas, tickets y capturas del banco, y te digo cuánto puedes gastar este mes y esta semana, cómo vas y cómo acabarás el año.</p><p><button class="btn oro" data-ir="subir">📎 Subir</button> <button class="btn sec" style="color:#fff;border-color:#fff" data-accion="demo">Ver el ejemplo</button></p>';
+    $('cQueda').innerHTML = '<h3>Aquí verás cuánto te queda</h3><p>Sube tus facturas, tickets y capturas del banco, y te digo cuánto puedes gastar este mes y esta semana, cómo vas y cómo acabarás el año.</p><p><button class="btn oro" data-ir="subir">Subir</button> <button class="btn sec" style="color:#fff;border-color:#fff" data-accion="demo">Ver el ejemplo</button></p>';
     return;
   }
   for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu']) $(id).hidden = false;
@@ -1171,7 +1200,7 @@ async function pintarCuentas() {
   if (!ingreso) frase = 'Cuando suba una captura con tu nómina (o me digas abajo cuánto ganas), te digo cuánto te queda.';
   else if (queda < 0) frase = 'Este mes vas por encima de lo que entra. Toca frenar un poco el día a día.';
   else if (mediaDiaAnt && ritmo > mediaDiaAnt * 1.1) frase = `A este ritmo, el día a día acabaría en ${eur(ritmo)}, más que tu media (${eur(mediaDiaAnt)}).`;
-  else frase = 'Vas bien. Sigue así 💪';
+  else frase = 'Vas bien. Sigue así';
   $('cQueda').innerHTML = ingreso ? `<p class="gris">Este mes te quedan para gastar</p><p class="grande">${eur(Math.max(0, queda))}</p>
     <p>Esta semana puedes gastar <b>${eur(Math.max(0, semana))}</b></p><p class="gris">${esc(frase)}</p>
     <p class="gris" style="font-size:.8rem">Entra ${eur(ingreso)} · fijos ${eur(fijosPrev)}${ahorroMes ? ' · ahorro ' + eur(ahorroMes) : ''} · ya gastado en el día a día ${eur(diaGastado)}</p>`
@@ -1194,20 +1223,20 @@ async function pintarCuentas() {
   let avisoTopes = '';
   if (plan && plan.tope > 0) {
     const semanalTopes = CON_TOPE.filter(c => !FUERA_SEMANA.includes(c)).reduce((s, c) => s + (misTopes[c] > 0 ? +misTopes[c] : 0), 0) * 12 / 52;
-    if (semanalTopes > plan.tope + 1) avisoTopes = `<p class="aviso mal" style="margin-top:8px">⚠️ Tus topes suman unos ${eur(semanalTopes)} a la semana, y para llegar a tu meta puedes gastar ${eur(Math.floor(plan.tope))}. Baja alguno.</p>`;
+    if (semanalTopes > plan.tope + 1) avisoTopes = `<p class="aviso mal" style="margin-top:8px">Tus topes suman unos ${eur(semanalTopes)} a la semana, y para llegar a tu meta puedes gastar ${eur(Math.floor(plan.tope))}. Baja alguno.</p>`;
   }
   $('cTopes').innerHTML = '<h3>¿Cómo vas en cada cosa?</h3><p class="gris">Este mes, comparado con tu tope (o, si no has puesto uno, con lo que sueles gastar).</p>' + (topes.map(t => {
     const pct = t.tope ? t.llevas / t.tope : 0, clase = !t.tope ? 'verde' : pct > 1 ? 'rojo' : pct >= 0.8 ? 'ambar' : 'verde';
     return `<div class="cat"><div style="flex:1">${ICO[t.c]} ${esc(CATS[t.c])}<div class="barra"><i class="${clase}" style="width:${Math.min(100, Math.round((t.tope ? pct : 1) * 100))}%"></i></div></div><b>${eur(t.llevas)}${t.tope ? ' <span class="gris">/ ' + eur(t.tope) + (t.suyo ? '' : ' (tu media)') + '</span>' : ''}</b></div>`;
   }).join('') || '<p class="gris">Aún no hay gastos del día a día este mes.</p>') + avisoTopes +
-    `<details class="bloque" style="margin-top:10px"><summary><span>✏️ Poner mis topes al mes</span><span></span></summary>
+    `<details class="bloque" style="margin-top:10px"><summary><span>Poner mis topes al mes</span><span></span></summary>
       <p class="gris">Lo que quieres gastar como mucho al mes en cada cosa. Si lo dejas en blanco, uso tu media.</p>
       ${CON_TOPE.map(c => { const t = topes.find(x => x.c === c); return `<label class="campo">${ICO[c]} ${esc(CATS[c])}${t && t.mediaCat ? ` <span class="gris">(tu media: ${eur(t.mediaCat)})</span>` : ''}
         <input data-tope="${c}" type="number" inputmode="decimal" min="0" step="5" value="${misTopes[c] > 0 ? misTopes[c] : ''}"></label>`; }).join('')}
       <p><button class="btn" data-accion="guardarTopes">Guardar mis topes</button></p></details>`;
   // gastos hormiga: pequeños (≤ 15 €) del día a día
   const hormiga = delMes.filter(a => a.tipo === 'g' && a.importe <= 15 && HORMIGA_CATS.includes(a.categoria));
-  $('cHormiga').innerHTML = `<details class="bloque"><summary><span>🐜 Gastos hormiga (de 15 € o menos)</span><span>${eur(suma(hormiga))}</span></summary>
+  $('cHormiga').innerHTML = `<details class="bloque"><summary><span>Gastos hormiga (de 15 € o menos)</span><span>${eur(suma(hormiga))}</span></summary>
     <p class="gris">${hormiga.length} pequeños gastos este mes. Al año serían unos ${eur(suma(hormiga) / hoy.getDate() * 365)}.</p>${hormiga.map(fila).join('')}</details>`;
   // el año: real hasta este mes y previsión hasta diciembre
   const prevIng = ingreso, prevGas = ant.length ? media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g')))) : suma(delMes.filter(a => a.tipo === 'g'));
@@ -1223,14 +1252,14 @@ async function pintarCuentas() {
   const finAnio = cfg.saldo !== undefined && cfg.saldo !== '' ? (+cfg.saldo + (acumulado - realHasta)) : null;
   $('cAnio').innerHTML = `<h3>${anio}, mes a mes</h3><p class="gris">En cursiva, lo previsto si sigues como hasta ahora.</p>
     <div class="scroll-x"><table class="anio"><tr><th></th><th>Entra</th><th>Sale</th><th>Queda</th></tr>${filas}</table></div>
-    <p style="margin-top:10px">${finAnio !== null ? `Si sigues así, a 31 de diciembre tendrás unos <b>${eur(finAnio)}</b> en el banco.` : `Si sigues así, este año te quedarán <b>${eur(acumulado)}</b>.`}${cfg.ahorro > 0 ? ` Tu objetivo es ahorrar ${eur(+cfg.ahorro)}: ${acumulado >= cfg.ahorro ? 'lo cumples ✅' : 'te faltan ' + eur(cfg.ahorro - acumulado)}.` : ''}</p>`;
+    <p style="margin-top:10px">${finAnio !== null ? `Si sigues así, a 31 de diciembre tendrás unos <b>${eur(finAnio)}</b> en el banco.` : `Si sigues así, este año te quedarán <b>${eur(acumulado)}</b>.`}${cfg.ahorro > 0 ? ` Tu objetivo es ahorrar ${eur(+cfg.ahorro)}: ${acumulado >= cfg.ahorro ? 'lo cumples' : 'te faltan ' + eur(cfg.ahorro - acumulado)}.` : ''}</p>`;
   // presupuesto del año que viene: lo que sueles gastar al mes en cada cosa
   const mesesConDatos = Object.keys(pm).filter(k => k <= mes && k.startsWith(String(anio))).length || 1;
   const porCat = {};
   for (const a of todos_) if (a.tipo === 'g' && a.fecha.startsWith(String(anio))) porCat[a.categoria] = (porCat[a.categoria] || 0) + a.importe;
   const presu = Object.entries(porCat).map(([c, v]) => [c, v / mesesConDatos]).sort((a, b) => b[1] - a[1]);
   const totalMes = presu.reduce((s, [, v]) => s + v, 0);
-  $('cPresu').innerHTML = `<details class="bloque"><summary><span>📅 Presupuesto ${anio + 1}</span><span>${eur(totalMes)}/mes</span></summary>
+  $('cPresu').innerHTML = `<details class="bloque"><summary><span>Presupuesto ${anio + 1}</span><span>${eur(totalMes)}/mes</span></summary>
     <p class="gris">Lo que sueles gastar al mes en cada cosa. Se ajusta solo con lo que vas subiendo.</p>
     ${presu.map(([c, v]) => `<div class="cat"><span>${ICO[c] || '•'} ${esc(CATS[c] || c)}</span><b>${eur(v)}/mes <span class="gris">· ${eur(v * 12)}/año</span></b></div>`).join('')}
     <p style="margin-top:8px">Con lo que ganas${ingreso ? ` (${eur(ingreso)}/mes)` : ''}, en ${anio + 1} te quedarían unos <b>${eur((ingreso - totalMes) * 12)}</b> al año.</p></details>`;
@@ -1262,15 +1291,15 @@ $('archivos').addEventListener('change', async (ev) => {
       const p = r.papel;
       const imp = p.importe != null ? ' · ' + eur(p.importe) : '';
       if (r.noExcel) { fila.className = 'aviso mal'; fila.innerHTML = `No encuentro los movimientos en <b>${esc(f.name)}</b>. Tiene que ser el Excel de movimientos de tu banco, con columnas de fecha, concepto e importe. Si no sale, mándaselo a Mapi.`; }
-      else if (r.todosYa) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>${esc(p.concepto)}:</b> todos sus movimientos ya estaban apuntados.`; }
-      else if (r.repetido) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Ya lo tenías:</b> ${esc(p.concepto)}${imp}. No lo he guardado otra vez.`; }
+      else if (r.todosYa) { fila.className = 'aviso rep'; fila.innerHTML = `<b>${esc(p.concepto)}:</b> todos sus movimientos ya estaban apuntados.`; }
+      else if (r.repetido) { fila.className = 'aviso rep'; fila.innerHTML = `<b>Ya lo tenías:</b> ${esc(p.concepto)}${imp}. No lo he guardado otra vez.`; }
       else if (r.captura) {
         const movs = p.movs, d = movs.filter(m => m.categoria === 'duda').length, g = movs.filter(m => m.tipo === 'g').length;
-        fila.className = 'aviso'; fila.innerHTML = `🏦 <b>${r.excel ? 'Excel del banco' : 'Captura del banco'}:</b> he apuntado ${movs.length} movimientos${r.excel && p.desde ? ` (del ${fechaTxt(p.desde)} al ${fechaTxt(p.hasta)})` : ''} (${g} gastos, ${movs.length - g} ingresos)${p.yaEstaban ? `; ${p.yaEstaban} ya estaban` : ''}.${d ? `<br>🤔 Hay ${d} que no sé qué son: te los pregunto en Inicio.` : ''}`;
+        fila.className = 'aviso'; fila.innerHTML = `<b>${r.excel ? 'Excel del banco' : 'Captura del banco'}:</b> he apuntado ${movs.length} movimientos${r.excel && p.desde ? ` (del ${fechaTxt(p.desde)} al ${fechaTxt(p.hasta)})` : ''} (${g} gastos, ${movs.length - g} ingresos)${p.yaEstaban ? `; ${p.yaEstaban} ya estaban` : ''}.${d ? `<br>Hay ${d} que no sé qué son: te los pregunto en Inicio.` : ''}`;
       }
       else if (p.categoria === 'revisar') { fila.className = 'aviso rep'; fila.innerHTML = p.importe == null && !p.emisor
-        ? `❓ <b>${esc(p.concepto)}</b>: no parece una factura o no la he podido leer. La he dejado en «Por revisar», sin importe, para que me digas qué es.`
-        : `❓ <b>${esc(p.concepto)}</b>: no lo he podido leer del todo, lo he dejado en «Por revisar».`; }
+        ? `<b>${esc(p.concepto)}</b>: no parece una factura o no la he podido leer. La he dejado en «Por revisar», sin importe, para que me digas qué es.`
+        : `<b>${esc(p.concepto)}</b>: no lo he podido leer del todo, lo he dejado en «Por revisar».`; }
       else { fila.className = 'aviso'; fila.innerHTML = `✓ <b>${esc(p.concepto)}${imp}</b><br><span class="gris">${esc(p.emisor)} · guardado en ${esc(CATS[p.categoria])}</span>`; }
     } catch (e) {
       console.error(e);
@@ -1463,7 +1492,7 @@ function fijarManifiesto() {
     await cargarDemo();
     const r = leerRecuerdos();
     if (!r._cfg) { const fin = new Date().getFullYear() + 1; r._cfg = JSON.stringify({objetivo: 4000, fecha: fin + '-12-31', saldo: 3000, guiaHecha: true, topes: {super: 300, restaurantes: 80, ropa: 50, compras: 40, belleza: 30, ocio: 30}, t: new Date().toISOString()}); try { localStorage.setItem(RK, JSON.stringify(r)); } catch (e) {} }
-    document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">👀 <b>Esto es una demostración</b> con una familia de ejemplo: mira «Cuentas» para ver cuánto pueden gastar esta semana. <a href="./" style="font-weight:700">Pruébala 15 días gratis con tus papeles →</a></p>');
+    document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso"><b>Esto es una demostración</b> con una familia de ejemplo: mira «Cuentas» para ver cuánto pueden gastar esta semana. <a href="./" style="font-weight:700">Pruébala 15 días gratis con tus papeles →</a></p>');
     ir('inicio');
     return;
   }
