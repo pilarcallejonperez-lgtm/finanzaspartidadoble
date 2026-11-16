@@ -207,6 +207,7 @@ html.pd-cerrado #pd-candado{display:flex}
   <!-- MIS CUENTAS (panel de finanzas) -->
   <section id="v-cuentas" hidden>
     <h2>Mis cuentas</h2>
+    <div class="tarjeta destacada" id="cSemana" hidden></div>
     <div class="tarjeta destacada" id="cQueda"></div>
     <div class="tarjeta" id="cMes"></div>
     <div class="tarjeta" id="cTopes"></div>
@@ -219,6 +220,7 @@ html.pd-cerrado #pd-candado{display:flex}
       <label class="campo">¿Cuánto quieres ahorrar al año? <input id="cfgAhorro" type="number" inputmode="decimal" min="0" step="50" placeholder="Por ejemplo, 2400"></label>
       <label class="campo">¿Cuánto tienes hoy en el banco? <input id="cfgSaldo" type="number" inputmode="decimal" step="10" placeholder="Por ejemplo, 3500"></label>
       <label class="campo">¿Cuánto ganas al mes? <input id="cfgIngreso" type="number" inputmode="decimal" min="0" step="10" placeholder="Lo saco de tus nóminas"></label>
+      <label class="campo">¿Cuánto quieres gastar a la semana en comida y día a día? <input id="cfgTope" type="number" inputmode="decimal" min="0" step="5" placeholder="Lo calculo con tus últimas semanas"></label>
       <p><button class="btn" data-accion="guardarCfg">Guardar</button> <span id="cfgOk" class="gris"></span></p>
     </div>
   </section>
@@ -834,10 +836,45 @@ const suma = l => l.reduce((s, a) => s + a.importe, 0);
 function mesesAntes(ym, n) { const [y, m] = ym.split('-').map(Number); const out = []; for (let i = 1; i <= n; i++) { const d = new Date(y, m - 1 - i, 15); out.push(d.toISOString().slice(0, 7)); } return out; }
 const media = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
 
+/* La semana, como la lleva Mapi: un tope para comida y día a día (de lunes a domingo), lo que queda,
+   cuánto sale al día hasta el domingo y cómo fueron las semanas anteriores. */
+const COMIDA = ['super', 'restaurantes'];
+const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function lunesDe(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function pintarSemana(lista, cfg) {
+  const caja = $('cSemana');
+  const diaADia = lista.filter(a => a.tipo === 'g' && grupoDe(a) === 'dia' && a.concepto !== 'Bizum del mes (neto)');
+  if (!diaADia.length) { caja.hidden = true; return; }
+  const hoy = new Date(), lunes = lunesDe(hoy);
+  const semanaDe = l => { const ini = isoDia(l), f = new Date(l); f.setDate(f.getDate() + 6); const fin = isoDia(f);
+    return diaADia.filter(a => a.fecha >= ini && a.fecha <= fin); };
+  // tope: el que ella diga o, si no, la media de sus 8 semanas anteriores con gastos (redondeada a 5 €)
+  const previas = [];
+  for (let i = 1; i <= 8; i++) { const l = new Date(lunes); l.setDate(l.getDate() - 7 * i); const s = semanaDe(l); if (s.length) previas.push({l, total: suma(s)}); }
+  const auto = previas.length ? Math.round(media(previas.map(p => p.total)) / 5) * 5 : 0;
+  const tope = cfg.tope > 0 ? +cfg.tope : auto;
+  if (!tope) { caja.hidden = true; return; }
+  const esta = semanaDe(lunes), gastado = suma(esta), comida = suma(esta.filter(a => COMIDA.includes(a.categoria)));
+  const quedan = tope - gastado;
+  const domingo = new Date(lunes); domingo.setDate(domingo.getDate() + 6);
+  const dias = Math.max(1, Math.round((domingo - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 12)) / 864e5) + 1);
+  const pct = Math.min(100, Math.round(gastado / tope * 100));
+  const corto = d => d.toLocaleDateString('es-ES', {day: 'numeric', month: 'numeric'});
+  const historia = previas.slice(0, 3).map(p => `<span style="margin-right:12px">Semana del ${corto(p.l)}: <b>${eur(p.total)}</b> ${p.total <= tope ? '✓' : '✗'}</span>`).join('');
+  caja.hidden = false;
+  caja.innerHTML = `<p class="gris">Esta semana (${corto(lunes)} – ${corto(domingo)}) te quedan</p>
+    <p class="grande">${eur(Math.max(0, quedan))}</p>
+    <p>${quedan > 0 ? `Unos <b>${eur(quedan / dias)}</b> al día hasta el domingo (${dias} ${dias === 1 ? 'día' : 'días'}).` : `Te has pasado <b>${eur(-quedan)}</b>: frena hasta el lunes, que empieza otra semana.`}</p>
+    <div style="background:rgba(255,255,255,.25);border-radius:6px;height:8px;margin:8px 0"><div style="width:${pct}%;height:8px;border-radius:6px;background:${quedan >= 0 ? '#c9a961' : '#e07a5f'}"></div></div>
+    <p class="gris" style="font-size:.85rem">Llevas ${eur(gastado)} de ${eur(tope)} · comida ${eur(comida)} · resto ${eur(gastado - comida)}${cfg.tope > 0 ? '' : ' · tope calculado con tus últimas semanas (cámbialo abajo, en «Tus números»)'}</p>
+    ${historia ? `<p class="gris" style="font-size:.85rem;margin-top:6px">${historia}</p>` : ''}`;
+}
+
 async function pintarCuentas() {
   const ps = await vivos(), cfg = leerCfg();
-  $('cfgAhorro').value = cfg.ahorro ?? ''; $('cfgSaldo').value = cfg.saldo ?? ''; $('cfgIngreso').value = cfg.ingreso ?? '';
+  $('cfgAhorro').value = cfg.ahorro ?? ''; $('cfgSaldo').value = cfg.saldo ?? ''; $('cfgIngreso').value = cfg.ingreso ?? ''; $('cfgTope').value = cfg.tope ?? '';
   const todos_ = apuntes(ps), pm = porMes(todos_);
+  pintarSemana(todos_, cfg);
   const hoy = new Date(), mes = hoyISO().slice(0, 7), anio = hoy.getFullYear();
   const delMes = pm[mes] || [];
   const ant = mesesAntes(mes, 3).filter(k => pm[k] && pm[k].length);  // meses anteriores con datos
@@ -987,7 +1024,7 @@ document.addEventListener('click', async (ev) => {
   }
   if (a === 'guardarCfg') {
     const num = id => { const v = $(id).value.trim(); return v === '' ? undefined : Math.max(id === 'cfgSaldo' ? -1e9 : 0, +v.replace(',', '.')); };
-    const r = leerRecuerdos(); r._cfg = JSON.stringify({ahorro: num('cfgAhorro'), saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), t: new Date().toISOString()});
+    const r = leerRecuerdos(); r._cfg = JSON.stringify({ahorro: num('cfgAhorro'), saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), tope: num('cfgTope'), t: new Date().toISOString()});
     try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
     $('cfgOk').textContent = '✓ Guardado'; setTimeout(() => $('cfgOk').textContent = '', 2500);
     Sincro.pronto(); pintarCuentas();
