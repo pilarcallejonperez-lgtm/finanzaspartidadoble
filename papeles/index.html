@@ -738,8 +738,19 @@ function apuntes(ps) {
   // Se cuenta solo el NETO de cada mes: si entra más de lo que sale, es un ingreso; si no, un gasto.
   const bizum = {};
   const esBizum = m => /bizum/i.test((m.concepto || '') + ' ' + (m.clave || ''));
+  // Un mismo movimiento que está en dos archivos (el Excel subido dos veces, una captura y el Excel…) cuenta UNA vez.
+  // Si dentro de un mismo archivo hay dos iguales (dos cafés el mismo día), cuentan los dos.
+  const maxPorClave = {}, usadas = {};
+  for (const p of ps) {
+    const c = {};
+    for (const m of (p.movs || [])) { const k = claveMov(m); c[k] = (c[k] || 0) + 1; }
+    for (const k in c) maxPorClave[k] = Math.max(maxPorClave[k] || 0, c[k]);
+  }
   for (const p of ps) for (const m of (p.movs || [])) {
     if ((m.divisa || 'EUR') !== 'EUR') continue;
+    const k = claveMov(m);
+    if ((usadas[k] || 0) >= maxPorClave[k]) continue;
+    usadas[k] = (usadas[k] || 0) + 1;
     if (esBizum(m)) {
       const k = m.fecha.slice(0, 7), b = bizum[k] || (bizum[k] = {neto: 0, fecha: m.fecha});
       b.neto += m.tipo === 'i' ? m.importe : -m.importe;
@@ -839,11 +850,13 @@ const media = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 
 /* La semana, como la lleva Mapi: un tope para comida y día a día (de lunes a domingo), lo que queda,
    cuánto sale al día hasta el domingo y cómo fueron las semanas anteriores. */
 const COMIDA = ['super', 'restaurantes'];
+// Como en el panel de Mapi: la gasolina, el transporte y las transferencias (limpieza, cajero…) no entran en la semana.
+const FUERA_SEMANA = ['coche', 'transporte', 'otros'];
 const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 function lunesDe(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
 function pintarSemana(lista, cfg) {
   const caja = $('cSemana');
-  const diaADia = lista.filter(a => a.tipo === 'g' && grupoDe(a) === 'dia' && a.concepto !== 'Bizum del mes (neto)');
+  const diaADia = lista.filter(a => a.tipo === 'g' && grupoDe(a) === 'dia' && !FUERA_SEMANA.includes(a.categoria) && a.concepto !== 'Bizum del mes (neto)');
   if (!diaADia.length) { caja.hidden = true; return; }
   const hoy = new Date(), lunes = lunesDe(hoy);
   const semanaDe = l => { const ini = isoDia(l), f = new Date(l); f.setDate(f.getDate() + 6); const fin = isoDia(f);
