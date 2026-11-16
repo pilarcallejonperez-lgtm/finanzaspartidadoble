@@ -124,6 +124,12 @@ html.pd-cerrado #pd-candado{display:flex}
     else if(q&&leer())probar(leer(),false).then(function(ok2){if(ok2)fijarEnDireccion(leer())});
     else if(q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo escribiéndome a hola@finanzaspartidadoble.es.';
   });
+  // Abierta como app (icono de la pantalla de inicio) y sin código: le pido el código del correo, no que se registre otra vez
+  var comoApp=(window.navigator.standalone===true)||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  if(comoApp&&!window.PD_DEMO){try{document.getElementById('pd-cand-caja').hidden=false;document.getElementById('pd-ya-tengo').parentNode.hidden=true;
+    document.getElementById('pd-cand-t').textContent='Escribe tu código';
+    var tx2=document.querySelector('#pd-candado .c > p');if(tx2)tx2.innerHTML='Es el código de 6 letras que te llegó en el correo de acceso. Solo te lo pido esta vez.';
+    document.getElementById('pd-pide').hidden=true;}catch(e){}}
   document.getElementById('pd-ya-tengo').addEventListener('click',function(e){e.preventDefault();var k=document.getElementById('pd-cand-caja');k.hidden=!k.hidden;if(!k.hidden)document.getElementById('pd-cand-i').focus()});
   document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();var c=document.getElementById('pd-cand-i').value;probar(c,true).then(function(ok){if(ok)fijarEnDireccion(c.trim().toUpperCase())})});
   // Pedir acceso: va al formulario de Google de Mapi (le llega un aviso a su Gmail)
