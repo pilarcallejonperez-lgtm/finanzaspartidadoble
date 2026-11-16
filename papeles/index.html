@@ -1003,6 +1003,7 @@ function porMes(lista) { const m = {}; for (const a of lista) { const k = mesDe(
 const suma = l => l.reduce((s, a) => s + a.importe, 0);
 function mesesAntes(ym, n) { const [y, m] = ym.split('-').map(Number); const out = []; for (let i = 1; i <= n; i++) { const d = new Date(y, m - 1 - i, 15); out.push(d.toISOString().slice(0, 7)); } return out; }
 const media = arr => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : 0;
+const mediana = arr => { if (!arr.length) return 0; const o = [...arr].sort((a, b) => a - b), m = o.length >> 1; return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2; };
 
 /* La semana, como la lleva Mapi: un tope para comida y día a día (de lunes a domingo), lo que queda,
    cuánto sale al día hasta el domingo y cómo fueron las semanas anteriores. */
@@ -1068,6 +1069,9 @@ function pintarPlan(cfg) {
     ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <span class="gris">(tu media: ${eur(P.mediasCat[c] || 0)})</span>
       <input data-plan="${c}" type="number" inputmode="decimal" min="0" step="5" value="${planCfg[c] != null ? planCfg[c] : ''}" placeholder="${Math.round(P.mediasCat[c] || 0)}"></label>`).join('')}
     <p><button class="btn" data-accion="guardarPlan">Guardar mi plan</button></p>
+    ${(P.extrasPlan || []).length ? `<h3 style="margin-top:14px">Pagos sueltos que no repito</h3>
+      <p class="gris">Estos pagos de los últimos meses los doy por puntuales y no los cuento en el futuro. Si alguno se va a repetir, añádelo abajo en «Cambios con fecha» o como gasto de una sola vez.</p>
+      ${[...P.extrasPlan].sort((a, b) => b.importe - a.importe).slice(0, 12).map(a => `<div class="cat"><span>${ICO[a.categoria] || '•'} ${esc(a.concepto || CATS[a.categoria] || '')} <span class="gris">· ${fechaTxt(a.fecha)}</span></span><b>${eur(a.importe)}</b></div>`).join('')}` : ''}
     <h3 style="margin-top:14px">Cambios con fecha</h3>
     <p class="gris">Por ejemplo: «desde febrero, el alquiler pasa a 730 €» o «desde enero, la nómina pasa a 2.000 €».</p>
     ${cambios.length ? cambios.map((c, i) => `<div class="cat"><span>Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? 'Lo que entra' : (ICO[c.cat] || '•') + ' ' + esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</span><button class="btn sec" data-accion="borrarCambio" data-i="${i}">✕</button></div>`).join('') : '<p class="gris">Ninguno todavía.</p>'}
@@ -1197,8 +1201,20 @@ async function pintarCuentas() {
   // alquiler 730») y gastos o ingresos puntuales («Lisboa 320 € en dic»). La meta se calcula mes a mes con eso.
   const ant6 = mesesAntes(mes, 6).filter(k => pm[k] && pm[k].length);
   const enSemana = a => a.tipo === 'g' && grupoDe(a) === 'dia' && !FUERA_SEMANA.includes(a.categoria) && a.concepto !== 'Bizum del mes (neto)';
-  const mediasCat = {};
-  for (const k of ant6) for (const a of pm[k]) if (a.tipo === 'g' && !enSemana(a)) mediasCat[a.categoria] = (mediasCat[a.categoria] || 0) + a.importe / ant6.length;
+  // Mapi (16/11, «si mi app no suma bien, las de las demás tampoco»): el plan no puede repetir cada mes lo que fue puntual.
+  // · Los pagos extraordinarios (impuestos, o 250 € o más fuera de casa y préstamos: el abogado, una reparación…) NO se dan
+  //   por repetidos: salen aparte en «Tu plan» y ella decide si vuelven.
+  // · Lo que se paga casi todos los meses (alquiler, renting…) va con la MEDIANA: un mes que falte o vaya doble no lo descuadra.
+  // · Lo esporádico (seguro anual, alguna factura suelta) va con la media de los 6 meses.
+  const mediasCat = {}, porCatMes = {}, extrasPlan = [];
+  for (const k of ant6) for (const a of pm[k]) if (a.tipo === 'g' && !enSemana(a)) {
+    if (grupoDe(a) === 'extra') { extrasPlan.push(a); continue; }
+    const pc = porCatMes[a.categoria] = porCatMes[a.categoria] || {}; pc[k] = (pc[k] || 0) + a.importe;
+  }
+  for (const c in porCatMes) {
+    const vals = ant6.map(k => porCatMes[c][k] || 0), conPago = vals.filter(v => v > 0).length;
+    mediasCat[c] = conPago >= Math.ceil(ant6.length * 2 / 3) ? mediana(vals) : media(vals);
+  }
   const ingresoMedia = cfg.ingreso > 0 ? +cfg.ingreso : (ant6.length ? media(ant6.map(k => suma(g(pm[k], 'entra')))) : ingreso);
   const planCfg = cfg.plan || {}, cambios = cfg.cambios || [], puntuales = cfg.puntuales || [];
   const catsPlan = [...new Set([...Object.keys(mediasCat), ...Object.keys(planCfg), ...cambios.map(c => c.cat).filter(c => c !== 'ingreso')])].filter(c => CATS[c]);
@@ -1208,7 +1224,7 @@ async function pintarCuentas() {
     if (cat === 'ingreso') return ingresoMedia;
     return planCfg[cat] != null ? +planCfg[cat] : (mediasCat[cat] || 0);
   };
-  window.__plan = {mediasCat, catsPlan, valorMes, ingresoMedia, mes};
+  window.__plan = {mediasCat, catsPlan, valorMes, ingresoMedia, mes, extrasPlan};
   let plan = null;
   if (cfg.objetivo > 0 && cfg.fecha && cfg.saldo != null) {
     const fin = new Date(cfg.fecha + 'T12:00'), dias = (fin - hoy) / 864e5;
@@ -1263,7 +1279,16 @@ async function pintarCuentas() {
   }).join('') + `<p class="gris" style="margin-top:8px">Resultado del mes: <b>${eur(suma(g(delMes, 'entra')) - suma(delMes.filter(a => a.tipo === 'g')))}</b></p>`;
   // topes por partida: los que ella ponga (Mapi, 16/11: «comer fuera 236 €?» — la media del verano no es un presupuesto);
   // si no pone el suyo, la media de los meses anteriores como referencia
-  const misTopes = cfg.topes || {};
+  // Topes que salieron del reparto de la guía: se ajustan solos cuando cambia el tope semanal del plan
+  // (Mapi, 16/11: súper 60 € al mes salía de un plan mal calculado y se quedaba fijo). Los que ella escribe a mano, no se tocan.
+  let misTopes = cfg.topes || {};
+  const semCats = CON_TOPE.filter(c => !FUERA_SEMANA.includes(c));
+  const baseGuia = cfg.topesBase > 0 ? +cfg.topesBase : (cfg.guiaHecha && cfg.topesGuia !== false && !cfg.topesAMano ? semCats.reduce((s, c) => s + (+misTopes[c] || 0), 0) * 12 / 52 : 0);
+  if (plan && plan.tope > 0 && baseGuia > 0 && !cfg.topesAMano) {
+    const f = plan.tope / baseGuia, aj = {};
+    for (const c in misTopes) aj[c] = semCats.includes(c) ? Math.round(misTopes[c] * f / 5) * 5 : misTopes[c];
+    misTopes = aj;
+  }
   const topes = CON_TOPE.map(c => {
     const llevas = suma(delMes.filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'));
     const mediaCat = ant.length ? Math.round(media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g' && a.categoria === c && grupoDe(a) === 'dia'))))) : 0;
@@ -1427,7 +1452,7 @@ document.addEventListener('click', async (ev) => {
   if (a === 'guiaFin') {
     const topes = Object.assign({}, leerCfg().topes || {});
     document.querySelectorAll('[data-gtope]').forEach(i => { const v = +String(i.value).replace(',', '.'); if (v >= 0) topes[i.dataset.gtope] = v; });
-    GUIA_FORZADA = false; GUIA_PASO = null; guardarCfgParcial({topes, guiaHecha: true}); return;
+    const pc = window.__planCalc; GUIA_FORZADA = false; GUIA_PASO = null; guardarCfgParcial({topes, guiaHecha: true, topesAMano: false, topesBase: pc && pc.tope > 0 ? Math.floor(pc.tope) : 0}); return;
   }
   if (a === 'guardarPlan') {
     const plan = {};
@@ -1450,7 +1475,7 @@ document.addEventListener('click', async (ev) => {
   if (a === 'guardarTopes') {
     const topes = {};
     document.querySelectorAll('[data-tope]').forEach(i => { const v = +String(i.value).replace(',', '.'); if (v > 0) topes[i.dataset.tope] = v; });
-    const r = leerRecuerdos(), c = leerCfg(); c.topes = topes; c.t = new Date().toISOString(); r._cfg = JSON.stringify(c);
+    const r = leerRecuerdos(), c = leerCfg(); c.topes = topes; c.topesAMano = true; c.t = new Date().toISOString(); r._cfg = JSON.stringify(c);
     try { localStorage.setItem(RK, JSON.stringify(r)); } catch (e) {}
     Sincro.pronto(); pintarCuentas();
   }
