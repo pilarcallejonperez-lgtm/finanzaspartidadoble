@@ -152,6 +152,8 @@ html.pd-cerrado #pd-candado{display:flex}
     var b=this.querySelector('button'); b.disabled=true; b.textContent='Enviando…';
     var datos=new URLSearchParams(); datos.append('entry.1999412123',n); datos.append('entry.1228290284',c);
     datos.append('entry.1853228186',PAG==='papeles'?'App Papeles en orden':'Crea tu asistente personal'); datos.append('entry.795686448',m);
+    // Aviso al móvil de Mapi al momento. Sin nombre ni correo: ese canal es público; los datos van solo al formulario.
+    try{fetch('https://ntfy.sh/pdoble-t4dvcvr64gdsc2',{method:'POST',body:'Alguien ha pedido acceso a '+(PAG==='papeles'?'la app Papeles en orden':'Crea tu asistente')+'. Dile a Valentina: «mira las solicitudes».',headers:{'Title':'Nueva solicitud de acceso','Priority':'high','Tags':'bell'}}).catch(function(){})}catch(x){}
     fetch(FORM,{method:'POST',mode:'no-cors',body:datos}).then(function(){
       document.getElementById('pd-pide').innerHTML='<p class="ok" style="font-size:18px">✓ ¡Recibido, '+n.replace(/[<>&"]/g,'')+'! Te escribo a tu correo con tu acceso.</p>';
     }).catch(function(){b.disabled=false;b.textContent='Pedir acceso a Mapi';r.className='mal';r.textContent='No se ha podido enviar. Comprueba tu conexión y vuelve a probar.'});
