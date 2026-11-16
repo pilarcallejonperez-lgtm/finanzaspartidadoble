@@ -31,7 +31,7 @@ img{max-width:100%}
 body{background:var(--fondo);color:var(--tinta);font-family:var(--f-txt);font-size:1.05rem;line-height:1.55;padding-bottom:88px}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--oro);outline-offset:3px}
-.env{max-width:1280px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.env{max-width:1520px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
 h1,h2,h3{font-family:var(--f-tit);font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
 .eti{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--oro)}
 
@@ -131,6 +131,9 @@ html,body{overflow-x:clip}
 /* regalo + contacto */
 .regalo{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:center;justify-content:space-between;background:var(--papel);border:1px solid var(--linea);border-radius:16px;padding:1.1rem 1.2rem}
 .regalo p{margin:0;min-width:0;flex:1 1 240px}
+.regalos{display:grid;gap:.8rem;margin-top:.2rem}
+@media (min-width:900px){.regalos{grid-template-columns:repeat(3,1fr)}.regalos .regalo{flex-direction:column;align-items:flex-start;justify-content:space-between}.regalos .regalo p{flex:1 1 auto}}
+.herr-arriba{padding-block:0 1.6rem}
 .regalo code{font-family:var(--f-mono);font-size:.8rem;background:var(--verde);color:var(--sobre-verde);padding:.2rem .5rem;border-radius:5px;letter-spacing:.06em}
 .contacto{background:var(--verde-h);color:var(--sobre-verde)}
 .contacto .env{padding-block:2.4rem;display:grid;gap:1rem}
@@ -225,6 +228,25 @@ html,body{overflow-x:clip}
     </aside>
   </div></section>
 
+
+  <section class="herr-arriba" id="herramientas"><div class="env">
+    <div class="eti" style="margin-bottom:.6rem">Herramientas · te mando tu acceso a tu correo</div>
+    <div class="regalos">
+      <div class="regalo">
+        <p><b>Papeles en orden.</b> Sube tus facturas, recibos o el Excel de tu banco y se ordenan solos. Te dice cuánto puedes gastar cada semana para llegar a tu meta. <b>15 días gratis.</b></p>
+        <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="papeles/">Pruébala gratis</a><a class="btn fino" href="papeles/?demo=1">Ver cómo funciona</a></span>
+      </div>
+      <div class="regalo">
+        <p><b>Crea tu asistente personal en dos minutos.</b> Respondes cinco preguntas y te llevas las instrucciones para tu chat de inteligencia artificial: te contesta como una asistente que te conoce.</p>
+        <a class="btn" href="asistente/">Entrar o pedir acceso</a>
+      </div>
+      <div class="regalo">
+        <p><b>Plantilla gratis «Tu mes en una hoja».</b> Adónde se va tu dinero cada mes, en Excel. ¿Prefieres que te lo miremos? Pulsa <b>ME INTERESA</b>.</p>
+        <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">ME INTERESA</a><a class="btn fino" href="plantillas/Tu_mes_en_una_hoja.xlsx" download>Descargar plantilla</a></span>
+      </div>
+    </div>
+  </div></section>
+
   <div class="env puertas" id="servicios">
 
     <details class="puerta" id="negocio">
@@ -310,31 +332,6 @@ html,body{overflow-x:clip}
     </details>
   </div>
   <div class="env" id="blog"><div class="blog-linea"><span class="eti">Blog y noticias</span><span>Lo que cambia en ayudas, cripto, seguros y papeles, explicado y con su fuente oficial. <b>Muy pronto.</b></span></div></div>
-
-
-
-
-
-
-  <section class="bloque" id="herramientas" style="padding-top:0"><div class="env">
-    <div class="eti" style="margin-bottom:.6rem">Herramientas gratuitas</div>
-    <div class="regalo">
-      <p><b>Crea tu asistente personal en dos minutos.</b> Respondes cinco preguntas y te llevas las instrucciones para tu chat de inteligencia artificial: desde ese momento te contesta como una asistente que te conoce.</p>
-      <a class="btn" href="asistente/">Entrar o pedir acceso</a>
-    </div>
-    <div class="regalo" style="margin-top:.8rem">
-      <p><b>Papeles en orden.</b> Sube tus facturas y recibos desde el móvil o el ordenador y se ordenan solos, con lo que gastas cada mes. Sin instalar nada.</p>
-      <a class="btn" href="papeles/">Entrar o pedir acceso</a>
-    </div>
-    <p class="nota" style="margin-top:.6rem">Las comparto con quien me lo pide: déjame tu nombre y tu correo y te mando tu acceso.</p>
-  </div></section>
-
-  <section class="bloque" style="padding-top:0"><div class="env">
-    <div class="regalo">
-      <p><b>Plantilla gratis «Tu mes en una hoja».</b> Adónde se va tu dinero cada mes, en Excel. ¿Prefieres que te lo miremos? Pulsa <b>ME INTERESA</b>, cuéntame qué necesitas y te contesto yo.</p>
-      <span style="display:flex;flex-wrap:wrap;gap:.6rem"><a class="btn" href="plantillas/Tu_mes_en_una_hoja.xlsx" download>Descargar plantilla</a><a class="btn fino" href="https://docs.google.com/forms/d/e/1FAIpQLSdJx13qDp0z784fEgZ4CgXlghzw5OWQIJFbgq5ra16Z3SvVag/viewform" target="_blank" rel="noopener">ME INTERESA</a></span>
-    </div>
-  </div></section>
 
   <section class="bloque" id="quienes"><div class="env">
     <div class="eti">Partida Doble</div>
