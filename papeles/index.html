@@ -159,6 +159,12 @@ html.pd-cerrado #pd-candado{display:flex}
     else if(q&&leer())probar(leer(),false).then(function(ok2){if(ok2)fijarEnDireccion(leer())});
     else if(q)document.getElementById('pd-cand-m').textContent='Ese enlace ya no vale. Pídeme uno nuevo escribiéndome a hola@finanzaspartidadoble.es.';
   });
+  // Abierta como app (icono de la pantalla de inicio) y sin código: le pido el código del correo, no que se registre otra vez
+  var comoApp=(window.navigator.standalone===true)||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  if(comoApp&&!window.PD_DEMO){try{document.getElementById('pd-cand-caja').hidden=false;document.getElementById('pd-ya-tengo').parentNode.hidden=true;
+    document.getElementById('pd-cand-t').textContent='Escribe tu código';
+    var tx2=document.querySelector('#pd-candado .c > p');if(tx2)tx2.innerHTML='Es el código de 6 letras que te llegó en el correo de acceso. Solo te lo pido esta vez.';
+    document.getElementById('pd-pide').hidden=true;}catch(e){}}
   document.getElementById('pd-ya-tengo').addEventListener('click',function(e){e.preventDefault();var k=document.getElementById('pd-cand-caja');k.hidden=!k.hidden;if(!k.hidden)document.getElementById('pd-cand-i').focus()});
   document.getElementById('pd-cand-f').addEventListener('submit',function(e){e.preventDefault();var c=document.getElementById('pd-cand-i').value;probar(c,true).then(function(ok){if(ok)fijarEnDireccion(c.trim().toUpperCase())})});
   // Pedir acceso: va al formulario de Google de Mapi (le llega un aviso a su Gmail)
@@ -637,7 +643,9 @@ const Sincro = DEMO ? {pronto() {}, sincronizar() {}, recienConectado: () => fal
   const deEnlace = Nube.llaveDeTexto(location.hash);
   let recienConectado = false;
   if (deEnlace && deEnlace !== llave) { llave = deEnlace; ls.set('pd_llave', llave); recienConectado = true; }
-  if (deEnlace) history.replaceState(null, '', location.pathname + location.search);
+  // La llave se queda en la dirección (#k=…), como en /app: así, al «Añadir a pantalla de inicio», el icono abre la
+  // misma cuenta y ve los mismos papeles (Mapi, 16/11: «al pasarla a la pantalla de inicio me vuelve a pedir que me registre»)
+  if (location.hash !== '#k=' + llave) history.replaceState(null, '', location.pathname + location.search + '#k=' + llave);
   const meta = p => { const m = Object.assign({}, p); delete m.blob; delete m.subido; return m; };
   const ruta = async (sub) => (await Nube.carpeta(llave)) + '/' + sub;
   const estado = (t) => { const e = $('estadoSync'); if (e) e.textContent = t; const d = $('sincroDetalle'); if (d) d.textContent = t; };
@@ -1438,6 +1446,16 @@ async function cargarDemo() {
     categoria: 'seguros', vencimiento: vence(25), concepto: 'Aviso de renovación del seguro de hogar', creado: new Date(Date.now() - 99e6).toISOString(), demo: true, blob: null});
 }
 
+/* El icono de la pantalla de inicio abre la dirección del manifiesto: la pongo con el código y la llave de esta persona */
+function fijarManifiesto() {
+  try {
+    const base = new URL('./', location.href).href;
+    const man = {name: 'Papeles en orden', short_name: 'Mis papeles', start_url: location.href, scope: base, display: 'standalone',
+      background_color: '#f3ecdf', theme_color: '#1f4535', icons: [{src: base + 'icono-192.png', sizes: '192x192', type: 'image/png'}, {src: base + 'icono-512.png', sizes: '512x512', type: 'image/png'}]};
+    const l = document.querySelector('link[rel=manifest]');
+    if (l) l.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(man));
+  } catch (e) {}
+}
 /* ---------------- arranque ---------------- */
 (async () => {
   try { await abrirDB(); } catch (e) { document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso mal">Este navegador no me deja guardar. Prueba en Safari o Chrome normal (no en modo privado).</p>'); return; }
@@ -1450,6 +1468,7 @@ async function cargarDemo() {
     return;
   }
   ir('inicio');
+  fijarManifiesto();
   if (window.__cfgEnlace) document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">✓ <b>Ya tienes puestos tu meta y tus topes.</b> Los ves en «Cuentas» y los puedes cambiar cuando quieras.</p>');
   if (Sincro.recienConectado()) document.querySelector('main').insertAdjacentHTML('afterbegin', '<p class="aviso">✓ <b>Dispositivo conectado.</b> Desde ahora ves aquí los mismos papeles que en tus otros dispositivos.</p>');
   Sincro.sincronizar();
