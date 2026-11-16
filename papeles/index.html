@@ -1338,18 +1338,24 @@ async function pintarCuentas() {
   const prevMesPlan = ym => catsPlan.reduce((s, c) => s + valorMes(c, ym), 0) + diaPrevMes + puntuales.filter(p => p.mes === ym && p.tipo !== 'i').reduce((s, p) => s + +p.importe, 0);
   const prevIngMes = ym => valorMes('ingreso', ym) + puntuales.filter(p => p.mes === ym && p.tipo === 'i').reduce((s, p) => s + +p.importe, 0);
   const prevIng = ingreso, prevGas = ant.length ? media(ant.map(k => suma(pm[k].filter(a => a.tipo === 'g')))) : suma(delMes.filter(a => a.tipo === 'g'));
-  let filas = '', acumulado = 0, realHasta = 0;
+  // Mapi (16/11: «no hemos contado con el saldo inicial»): con su saldo de hoy, la columna es lo que tiene en el banco
+  // a final de cada mes (saldo a 1 de enero = saldo de hoy − lo que ha quedado en los meses reales)
+  const conSaldo = cfg.saldo !== undefined && cfg.saldo !== '' && cfg.saldo !== null;
+  let realAntes = 0;
+  for (let m = 0; m < 12; m++) { const ym = `${anio}-${String(m + 1).padStart(2, '0')}`; if (ym > mes) break; const l = pm[ym] || []; realAntes += suma(g(l, 'entra')) - suma(l.filter(a => a.tipo === 'g')); }
+  const saldoEnero = conSaldo ? +cfg.saldo - realAntes : 0;
+  let filas = conSaldo ? `<tr><td colspan="4" class="gris">Saldo a 1 de enero</td><td><b>${eur(saldoEnero)}</b></td></tr>` : '', acumulado = 0, realHasta = 0;
   for (let m = 0; m < 12; m++) {
     const ym = `${anio}-${String(m + 1).padStart(2, '0')}`, l = pm[ym] || [];
     const futuro = ym > mes, sinDatos = !l.length && !futuro;
     const ing = futuro ? prevIngMes(ym) : suma(g(l, 'entra')), gas = futuro ? prevMesPlan(ym) : suma(l.filter(a => a.tipo === 'g'));
     if (sinDatos) continue;
     const res = ing - gas; acumulado += res; if (!futuro) realHasta += res;
-    filas += `<tr class="${futuro ? 'prev' : ''}"><td>${nombreMes(ym)}</td><td>${eur(ing)}</td><td>${eur(gas)}</td><td>${eur(res)}</td><td><b>${eur(acumulado)}</b></td></tr>`;
+    filas += `<tr class="${futuro ? 'prev' : ''}"><td>${nombreMes(ym)}</td><td>${eur(ing)}</td><td>${eur(gas)}</td><td>${eur(res)}</td><td><b>${eur(saldoEnero + acumulado)}</b></td></tr>`;
   }
   const finAnio = cfg.saldo !== undefined && cfg.saldo !== '' ? (+cfg.saldo + (acumulado - realHasta)) : null;
   $('cAnio').innerHTML = `<h3>${anio}, mes a mes</h3><p class="gris">En cursiva, lo previsto si sigues como hasta ahora.</p>
-    <div class="scroll-x"><table class="anio"><tr><th></th><th>Entra</th><th>Sale</th><th>Queda</th><th>Acumulado</th></tr>${filas}</table></div>
+    <div class="scroll-x"><table class="anio"><tr><th></th><th>Entra</th><th>Sale</th><th>Queda</th><th>${conSaldo ? 'En el banco' : 'Acumulado'}</th></tr>${filas}</table></div>
     <p style="margin-top:10px">${finAnio !== null ? `Si sigues así, a 31 de diciembre tendrás unos <b>${eur(finAnio)}</b> en el banco.` : `Si sigues así, este año te quedarán <b>${eur(acumulado)}</b>.`}${cfg.ahorro > 0 ? ` Tu objetivo es ahorrar ${eur(+cfg.ahorro)}: ${acumulado >= cfg.ahorro ? 'lo cumples' : 'te faltan ' + eur(cfg.ahorro - acumulado)}.` : ''}</p>`;
   // presupuesto del año que viene: lo que sueles gastar al mes en cada cosa
   const sig = anio + 1, mesesSig = Array.from({length: 12}, (_, i) => `${sig}-${String(i + 1).padStart(2, '0')}`);
