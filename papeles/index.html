@@ -195,9 +195,10 @@ html.pd-cerrado #pd-candado{display:flex}
     <label class="subir">
       <span style="font-size:2.4rem">📎</span>
       <b>Toca para subir una factura o una foto</b>
-      <span class="gris">PDF o foto. Puedes elegir varios a la vez.</span>
-      <input type="file" id="archivos" accept="application/pdf,image/*" multiple>
+      <span class="gris">PDF, foto o el Excel de movimientos de tu banco. Puedes elegir varios a la vez.</span>
+      <input type="file" id="archivos" accept="application/pdf,image/*,.xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" multiple>
     </label>
+    <div class="aviso" style="margin-top:12px">🏦 <b>¿Quieres meter todo el año de golpe?</b> En la web o la app de tu banco, ve a «Movimientos», elige desde el 1 de enero y dale a «Descargar» o «Exportar» en Excel. Sube aquí ese archivo y apunto todos los movimientos de una vez.</div>
     <div class="aviso" style="margin-top:12px">📧 <b>Las facturas que te llegan por correo</b> (luz, teléfono, seguros…): ábrelas, guarda el PDF y súbelo aquí. La app no entra en tu correo: solo ve lo que tú subes.</div>
     <div id="resultados" aria-live="polite"></div>
     <p class="gris" style="margin-top:12px">La primera vez tarda un poco más, porque preparo el lector. Después va rápido.</p>
@@ -389,6 +390,123 @@ async function captura(lineas) {
   return JSON.parse(py.runPython('captura_web.leer(LINEAS, HOY)'));
 }
 const claveMov = m => [m.fecha, m.tipo, m.importe.toFixed(2), m.divisa || 'EUR', (m.clave || '').split(' ')[0]].join('|');
+
+/* ---------------- Excel / CSV de movimientos del banco ---------------- */
+const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+let XL = null;
+const esExcel = f => /\.(xlsx|xls|csv)$/i.test(f.name) || /spreadsheet|ms-excel|text\/csv/.test(f.type || '');
+const sinAcentos = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+// Fecha: objeto Date (celda de fecha), número de serie de Excel o texto dd/mm/aaaa, dd-mm-aa, aaaa-mm-dd
+function fechaCelda(v) {
+  if (v == null || v === '') return null;
+  const iso = d => isNaN(d) ? null : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  if (v instanceof Date) return iso(new Date(v.getTime() + 12 * 3600e3));  // mediodía: sin saltos por la hora
+  if (typeof v === 'number') return v > 20000 && v < 80000 ? iso(new Date(Math.round((v - 25569) * 86400e3) + 12 * 3600e3)) : null;
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if (m) return iso(new Date(+m[1], +m[2] - 1, +m[3], 12));
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if (m) { const a = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return +m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31 ? iso(new Date(a, +m[2] - 1, +m[1], 12)) : null; }
+  return null;
+}
+// Importe: número o texto «-1.234,56 €», «1,234.56», «(12,30)»
+function numCelda(v) {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  let s = String(v).replace(/[€\s ]|EUR/gi, '');
+  let neg = /^\(.*\)$/.test(s) || /-$/.test(s); s = s.replace(/[()]/g, '').replace(/-$/, '');
+  if (s.startsWith('-')) { neg = !neg; s = s.slice(1); } else if (s.startsWith('+')) s = s.slice(1);
+  if (!/^[\d.,]+$/.test(s)) return null;
+  const c = s.lastIndexOf(','), p = s.lastIndexOf('.');
+  if (c > p) s = s.replace(/\./g, '').replace(',', '.');           // 1.234,56
+  else if (p > c && c >= 0) s = s.replace(/,/g, '');               // 1,234.56
+  else if (p >= 0 && /^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');  // 1.234 (miles)
+  const n = parseFloat(s);
+  return isFinite(n) ? (neg ? -n : n) : null;
+}
+// Busca la fila de títulos y qué columna es cada cosa
+function columnasExcel(filas) {
+  const es = (t, ...pal) => pal.some(p => t === p || t.startsWith(p + ' ') || t.includes(p));
+  for (let i = 0; i < Math.min(filas.length, 40); i++) {
+    const t = (filas[i] || []).map(sinAcentos);
+    const col = {fecha: -1, concepto: -1, importe: -1, cargo: -1, abono: -1, divisa: -1};
+    t.forEach((x, j) => {
+      if (!x) return;
+      if (col.fecha < 0 && es(x, 'fecha operacion', 'f. operacion', 'fecha oper', 'fecha') && !es(x, 'fecha valor', 'f. valor')) col.fecha = j;
+      else if (col.concepto < 0 && es(x, 'concepto', 'descripcion', 'movimiento', 'detalle', 'operacion', 'comercio', 'beneficiario')) col.concepto = j;
+      else if (col.importe < 0 && (x === 'importe' || es(x, 'importe (', 'importe eur', 'importe en', 'cantidad', 'monto', 'amount'))) col.importe = j;
+      else if (col.cargo < 0 && es(x, 'cargo', 'debe', 'gasto', 'salida', 'reintegro')) col.cargo = j;
+      else if (col.abono < 0 && es(x, 'abono', 'haber', 'ingreso', 'entrada')) col.abono = j;
+      else if (col.divisa < 0 && es(x, 'divisa', 'moneda')) col.divisa = j;
+    });
+    if (col.fecha < 0) { const j = t.findIndex(x => es(x, 'fecha valor', 'f. valor')); if (j >= 0) col.fecha = j; }
+    if (col.importe < 0 && col.cargo < 0 && col.abono < 0) { const j = t.findIndex(x => x.startsWith('importe')); if (j >= 0) col.importe = j; }
+    if (col.fecha >= 0 && col.concepto >= 0 && (col.importe >= 0 || col.cargo >= 0 || col.abono >= 0)) return {fila: i, ...col};
+  }
+  return null;
+}
+async function movimientosExcel(buf) {
+  if (!XL) XL = cargarScript(XLSX_URL);
+  try { await XL; } catch (e) { XL = null; throw e; }
+  // CSV: se lee como texto tal cual (si no, «01/03/2026» se vuelve 3 de enero y «1850,00» se vuelve 185000).
+  // Los bancos españoles a veces lo dan en Windows-1252: si en UTF-8 salen caracteres rotos, se lee así.
+  const u8 = new Uint8Array(buf);
+  const pareceCSV = !(u8[0] === 0x50 && u8[1] === 0x4B) && !(u8[0] === 0xD0 && u8[1] === 0xCF) && !/<table|<html/i.test(new TextDecoder().decode(u8.slice(0, 512)));
+  let libro;
+  if (pareceCSV) {
+    let txt = new TextDecoder('utf-8').decode(u8);
+    if (txt.includes('�')) txt = new TextDecoder('windows-1252').decode(u8);
+    libro = XLSX.read(txt.replace(/^﻿/, ''), {type: 'string', raw: true});
+  } else libro = XLSX.read(u8, {type: 'array', cellDates: true});
+  for (const nombre of libro.SheetNames) {
+    const filas = XLSX.utils.sheet_to_json(libro.Sheets[nombre], {header: 1, raw: true, defval: ''});
+    const col = columnasExcel(filas);
+    if (!col) continue;
+    const movs = [];
+    for (const f of filas.slice(col.fila + 1)) {
+      const fecha = fechaCelda(f[col.fecha]);
+      if (!fecha) continue;
+      let imp = col.importe >= 0 ? numCelda(f[col.importe]) : null;
+      if (imp == null) {
+        const ca = col.cargo >= 0 ? numCelda(f[col.cargo]) : null, ab = col.abono >= 0 ? numCelda(f[col.abono]) : null;
+        if (ca) imp = -Math.abs(ca); else if (ab) imp = Math.abs(ab);
+      }
+      if (!imp) continue;
+      const div = col.divisa >= 0 ? String(f[col.divisa] || '').trim().toUpperCase() : '';
+      movs.push({fecha, importe: imp, concepto: String(f[col.concepto] ?? '').replace(/\s+/g, ' ').trim(), divisa: /^[A-Z]{3}$/.test(div) ? div : 'EUR'});
+    }
+    if (movs.length) return movs;
+  }
+  return [];
+}
+async function procesarExcel(file, buf, h) {
+  const crudos = await movimientosExcel(buf);
+  if (!crudos.length) return {noExcel: true, papel: {concepto: file.name, importe: null}};
+  const py = await lector();
+  py.globals.set('MOVS', JSON.stringify(crudos));
+  const lista = JSON.parse(py.runPython('captura_web.clasificar(MOVS)')).movimientos;
+  const existentes = new Set();
+  for (const q of await vivos()) for (const m of (q.movs || [])) existentes.add(claveMov(m));
+  const rec = leerRecuerdos(), nuevos = [];
+  let ya = 0;
+  for (const m of lista) {
+    const k = claveMov(m);
+    if (existentes.has(k)) { ya++; continue; }
+    existentes.add(k + '#' + nuevos.length);
+    if (m.tipo === 'g' && rec['c:' + m.clave]) m.categoria = rec['c:' + m.clave];
+    nuevos.push(m);
+  }
+  if (!nuevos.length) return {repetido: true, papel: {concepto: 'Movimientos del banco', importe: null}, todosYa: true};
+  const fechas = nuevos.map(m => m.fecha).sort();
+  const p = {
+    id: nuevoUUID(), hash: h, nombre: file.name, mime: file.type || 'application/vnd.ms-excel', actualizado: new Date().toISOString(), subido: false,
+    fecha: fechas[fechas.length - 1], emisor: '', importe: null, tipo: 'captura', categoria: 'banco', vencimiento: '',
+    concepto: 'Movimientos del banco (Excel)', movs: nuevos, yaEstaban: ya, desde: fechas[0], hasta: fechas[fechas.length - 1],
+    creado: new Date().toISOString(), demo: false, blob: new Blob([buf], {type: file.type || 'application/octet-stream'})
+  };
+  await guardar(p); Sincro.pronto();
+  return {repetido: false, papel: p, captura: true, excel: true};
+}
 async function huella(buf) {
   const h = await crypto.subtle.digest('SHA-256', buf);
   return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -407,7 +525,8 @@ async function procesar(file) {
   const h = await huella(buf);
   const ya = await porHash(h);
   if (ya) return {repetido: true, papel: ya};
-  const esPDF = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (esExcel(file)) return procesarExcel(file, buf, h);
+  const esPDF =file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
   let texto = '', lineas = [];
   try {
     if (esPDF) texto = await textoPDF(buf.slice(0));
@@ -447,6 +566,9 @@ async function procesar(file) {
   const rec = leerRecuerdos()[claveEmisor(d.emisor)];
   if (rec) cat = rec;
   if (!segura) cat = 'revisar';
+  // Si no sé de quién es, no me invento un importe: cualquier número suelto de la foto no es un gasto.
+  // Tampoco me invento el nombre: si no sé ni qué tipo de papel es, el «emisor» suele ser texto suelto de la imagen.
+  if (!segura && (!d.emisor || !d.tipo || d.tipo === 'otro')) { d.importe = null; d.emisor = ''; d.concepto = esPDF ? 'Documento sin leer' : 'Foto sin leer'; }
   const p = {
     id: nuevoUUID(), hash: h, nombre: file.name, mime: file.type || (esPDF ? 'application/pdf' : 'image/jpeg'),
     actualizado: new Date().toISOString(), subido: false,
@@ -803,13 +925,16 @@ $('archivos').addEventListener('change', async (ev) => {
       const r = await procesar(f);
       const p = r.papel;
       const imp = p.importe != null ? ' · ' + eur(p.importe) : '';
-      if (r.todosYa) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Captura del banco:</b> todos sus movimientos ya estaban apuntados.`; }
+      if (r.noExcel) { fila.className = 'aviso mal'; fila.innerHTML = `No encuentro los movimientos en <b>${esc(f.name)}</b>. Tiene que ser el Excel de movimientos de tu banco, con columnas de fecha, concepto e importe. Si no sale, mándaselo a Mapi.`; }
+      else if (r.todosYa) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>${esc(p.concepto)}:</b> todos sus movimientos ya estaban apuntados.`; }
       else if (r.repetido) { fila.className = 'aviso rep'; fila.innerHTML = `🔁 <b>Ya lo tenías:</b> ${esc(p.concepto)}${imp}. No lo he guardado otra vez.`; }
       else if (r.captura) {
         const movs = p.movs, d = movs.filter(m => m.categoria === 'duda').length, g = movs.filter(m => m.tipo === 'g').length;
-        fila.className = 'aviso'; fila.innerHTML = `🏦 <b>Captura del banco:</b> he apuntado ${movs.length} movimientos (${g} gastos, ${movs.length - g} ingresos)${p.yaEstaban ? `; ${p.yaEstaban} ya estaban` : ''}.${d ? `<br>🤔 Hay ${d} que no sé qué son: te los pregunto en Inicio.` : ''}`;
+        fila.className = 'aviso'; fila.innerHTML = `🏦 <b>${r.excel ? 'Excel del banco' : 'Captura del banco'}:</b> he apuntado ${movs.length} movimientos${r.excel && p.desde ? ` (del ${fechaTxt(p.desde)} al ${fechaTxt(p.hasta)})` : ''} (${g} gastos, ${movs.length - g} ingresos)${p.yaEstaban ? `; ${p.yaEstaban} ya estaban` : ''}.${d ? `<br>🤔 Hay ${d} que no sé qué son: te los pregunto en Inicio.` : ''}`;
       }
-      else if (p.categoria === 'revisar') { fila.className = 'aviso rep'; fila.innerHTML = `❓ <b>${esc(p.concepto)}</b>: no lo he podido leer del todo, lo he dejado en «Por revisar».`; }
+      else if (p.categoria === 'revisar') { fila.className = 'aviso rep'; fila.innerHTML = p.importe == null && !p.emisor
+        ? `❓ <b>${esc(p.concepto)}</b>: no parece una factura o no la he podido leer. La he dejado en «Por revisar», sin importe, para que me digas qué es.`
+        : `❓ <b>${esc(p.concepto)}</b>: no lo he podido leer del todo, lo he dejado en «Por revisar».`; }
       else { fila.className = 'aviso'; fila.innerHTML = `✓ <b>${esc(p.concepto)}${imp}</b><br><span class="gris">${esc(p.emisor)} · guardado en ${esc(CATS[p.categoria])}</span>`; }
     } catch (e) {
       console.error(e);

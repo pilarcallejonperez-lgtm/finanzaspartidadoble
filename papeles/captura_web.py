@@ -36,3 +36,20 @@ def leer(lineas_json, ref_iso):
                     "divisa": m.get("divisa") or "EUR", "concepto": nombre, "clave": banco.clave_comercio(nombre),
                     "categoria": cat})
     return json.dumps({"movimientos": out}, ensure_ascii=False)
+
+
+def clasificar(movs_json):
+    """Movimientos que ya vienen limpios (Excel del banco): [{fecha ISO, importe con signo, concepto}].
+    Devuelve el mismo formato que leer(), con el comercio, la clave y la categoría de siempre."""
+    out = []
+    for m in json.loads(movs_json):
+        imp = float(m["importe"])
+        if not imp:
+            continue
+        concepto = banco.tapar_tarjetas(str(m.get("concepto") or "")).replace("****", " ").strip() or "Movimiento"
+        nombre = banco.nombre_comercio(concepto) or concepto
+        tipo = "i" if imp > 0 else "g"
+        cat = "ingreso" if tipo == "i" else (lector.clasificar_comercio(concepto) or "duda")
+        out.append({"fecha": m["fecha"], "tipo": tipo, "importe": round(abs(imp), 2), "divisa": m.get("divisa") or "EUR",
+                    "concepto": nombre, "clave": banco.clave_comercio(nombre), "categoria": cat})
+    return json.dumps({"movimientos": out}, ensure_ascii=False)
