@@ -214,6 +214,7 @@ html.pd-cerrado #pd-candado{display:flex}
     <div class="tarjeta" id="cHormiga"></div>
     <div class="tarjeta" id="cAnio"></div>
     <div class="tarjeta" id="cPresu"></div>
+    <div class="tarjeta" id="cPlan" hidden></div>
     <div class="tarjeta">
       <h3>Tu meta</h3>
       <p class="gris">Dime con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana para conseguirlo.</p>
@@ -840,8 +841,26 @@ const leerCfg = () => { try { return JSON.parse(leerRecuerdos()._cfg || '{}'); }
 (function cfgDesdeEnlace() {
   try {
     const q = new URLSearchParams(location.search);
-    if (!q.has('topes') && !q.has('meta') && !q.has('fecha')) return;
+    if (!['topes', 'meta', 'fecha', 'cambios', 'puntuales', 'plan', 'ingreso'].some(k => q.has(k))) return;
     const c = leerCfg();
+    // plan=vivienda:730,luz:45   ingreso=2324
+    if (q.has('plan')) {
+      const p = {};
+      for (const par of q.get('plan').split(',')) { const [k, v] = par.split(':'); if (CATS[k] && +v >= 0) p[k] = +v; }
+      c.plan = p;
+    }
+    if (+q.get('ingreso') > 0) c.ingreso = +q.get('ingreso');
+    // cambios=vivienda:800:2026-12;vivienda:730:2027-02   puntuales=Lisboa:320:2026-12:g;Paga extra:900:2027-06:i
+    if (q.has('cambios')) {
+      const l = [];
+      for (const s of q.get('cambios').split(';')) { const [cat, imp, desde] = s.split(':'); if ((CATS[cat] || cat === 'ingreso') && +imp >= 0 && /^\d{4}-\d{2}$/.test(desde || '')) l.push({cat, importe: +imp, desde}); }
+      c.cambios = l;
+    }
+    if (q.has('puntuales')) {
+      const l = [];
+      for (const s of q.get('puntuales').split(';')) { const [nombre, imp, mes, tipo] = s.split(':'); if (+imp > 0 && /^\d{4}-\d{2}$/.test(mes || '')) l.push({nombre: nombre || '', importe: +imp, mes, tipo: tipo === 'i' ? 'i' : 'g'}); }
+      c.puntuales = l;
+    }
     if (q.has('topes')) {
       const t = Object.assign({}, c.topes || {});
       for (const par of q.get('topes').split(',')) { const [k, v] = par.split(':'); if (CATS[k] && +v > 0) t[k] = +v; }
@@ -851,7 +870,7 @@ const leerCfg = () => { try { return JSON.parse(leerRecuerdos()._cfg || '{}'); }
     if (/^\d{4}-\d{2}-\d{2}$/.test(q.get('fecha') || '')) c.fecha = q.get('fecha');
     c.t = new Date().toISOString();
     const r = leerRecuerdos(); r._cfg = JSON.stringify(c); localStorage.setItem('recuerdos', JSON.stringify(r));
-    ['topes', 'meta', 'fecha'].forEach(k => q.delete(k));
+    ['topes', 'meta', 'fecha', 'cambios', 'puntuales', 'plan', 'ingreso'].forEach(k => q.delete(k));
     history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
     window.__cfgEnlace = true;
   } catch (e) { console.warn('cfg del enlace', e); }
@@ -894,7 +913,7 @@ function pintarSemana(lista, cfg, plan) {
     caja.innerHTML = `<p class="gris">Tu meta: ${eur(plan.objetivo)} el ${fechaLarga(plan.fin)}</p>
       <p class="grande">No llegas</p>
       <p>Al ritmo de ahora te faltarían unos <b>${eur(plan.falta)}</b>, aunque no gastaras nada en comida ni en el día a día.</p>
-      <p class="gris" style="font-size:.85rem">Entra ${eur(plan.ingresoMedia)}/mes · fijos ${eur(plan.fijosMedia)}/mes · otros gastos ${eur(plan.fueraMedia)}/mes. Prueba con una meta más pequeña o una fecha más lejana, o mira qué fijo puedes bajar.</p>`;
+      <p class="gris" style="font-size:.85rem">Según tu plan: entran ${eur(plan.ingresoMedia)}/mes y el resto de gastos son ${eur(plan.fijosMedia)}/mes. Prueba con una meta más pequeña o una fecha más lejana, o repasa abajo «Tu plan».</p>`;
     return;
   }
   const tope = plan ? Math.floor(plan.tope) : auto;
@@ -913,9 +932,52 @@ function pintarSemana(lista, cfg, plan) {
     <div style="background:rgba(255,255,255,.25);border-radius:6px;height:8px;margin:8px 0"><div style="width:${pct}%;height:8px;border-radius:6px;background:${quedan >= 0 ? '#c9a961' : '#e07a5f'}"></div></div>
     <p class="gris" style="font-size:.85rem">Llevas ${eur(gastado)} de ${eur(tope)} · comida ${eur(comida)} · resto ${eur(gastado - comida)}</p>
     <p class="gris" style="font-size:.85rem">${plan
-      ? `🎯 Para llegar al ${fechaLarga(plan.fin)} con <b>${eur(plan.objetivo)}</b>, puedes gastar <b>${eur(tope)} a la semana</b> en comida y día a día. (Entra ${eur(plan.ingresoMedia)}/mes · fijos ${eur(plan.fijosMedia)}/mes · otros gastos ${eur(plan.fueraMedia)}/mes)`
+      ? `🎯 Para llegar al ${fechaLarga(plan.fin)} con <b>${eur(plan.objetivo)}</b>, puedes gastar <b>${eur(tope)} a la semana</b> en comida y día a día. (Según tu plan: entran ${eur(plan.ingresoMedia)}/mes y el resto de gastos son ${eur(plan.fijosMedia)}/mes. Lo cambias abajo, en «Tu plan».)`
       : '🎯 Pon abajo, en «Tu meta», con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana. Mientras, uso la media de tus últimas semanas.'}</p>
     ${historia ? `<p class="gris" style="font-size:.85rem;margin-top:6px">${historia}</p>` : ''}`;
+}
+
+const mesTxt = ym => new Date(ym + '-15T12:00').toLocaleDateString('es-ES', {month: 'short', year: 'numeric'});
+function pintarPlan(cfg) {
+  const P = window.__plan, caja = $('cPlan');
+  if (!P) { caja.hidden = true; return; }
+  const planCfg = cfg.plan || {}, cambios = cfg.cambios || [], puntuales = cfg.puntuales || [];
+  const cats = [...P.catsPlan].sort((a, b) => (P.mediasCat[b] || 0) - (P.mediasCat[a] || 0));
+  const opciones = ['<option value="ingreso">💶 Lo que entra al mes</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c))
+    .map(c => `<option value="${c}">${ICO[c] || '•'} ${esc(CATS[c])}</option>`)].join('');
+  caja.hidden = false;
+  caja.innerHTML = `<details class="bloque"><summary><span>📋 Tu plan: lo que esperas cada mes</span><span></span></summary>
+    <p class="gris">Todo lo que no va en la semana: casa, recibos, coche, préstamos, viajes… Empieza con tu media de los últimos 6 meses. Cambia lo que sepas que va a ser distinto y la meta se recalcula.</p>
+    <label class="campo">💶 Lo que entra al mes <span class="gris">(tu media: ${eur(P.ingresoMedia)})</span>
+      <input data-plan-ingreso type="number" inputmode="decimal" min="0" step="10" value="${cfg.ingreso > 0 ? cfg.ingreso : ''}" placeholder="${Math.round(P.ingresoMedia)}"></label>
+    ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <span class="gris">(tu media: ${eur(P.mediasCat[c] || 0)})</span>
+      <input data-plan="${c}" type="number" inputmode="decimal" min="0" step="5" value="${planCfg[c] != null ? planCfg[c] : ''}" placeholder="${Math.round(P.mediasCat[c] || 0)}"></label>`).join('')}
+    <p><button class="btn" data-accion="guardarPlan">Guardar mi plan</button></p>
+    <h3 style="margin-top:14px">📅 Cambios con fecha</h3>
+    <p class="gris">Por ejemplo: «desde febrero, el alquiler pasa a 730 €» o «desde enero, la nómina pasa a 2.000 €».</p>
+    ${cambios.length ? cambios.map((c, i) => `<div class="cat"><span>Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? '💶 Lo que entra' : (ICO[c.cat] || '•') + ' ' + esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</span><button class="btn sec" data-accion="borrarCambio" data-i="${i}">✕</button></div>`).join('') : '<p class="gris">Ninguno todavía.</p>'}
+    <label class="campo">Qué cambia <select id="nuevoCat" class="buscar">${opciones}</select></label>
+    <label class="campo">Desde <input id="nuevoDesde" type="month" min="${P.mes}"></label>
+    <label class="campo">Nuevo importe al mes <input id="nuevoImporte" type="number" inputmode="decimal" min="0" step="5"></label>
+    <p><button class="btn sec" data-accion="addCambio">Añadir cambio</button></p>
+    <h3 style="margin-top:14px">📌 Gastos o ingresos puntuales</h3>
+    <p class="gris">Algo que pasará una sola vez: un viaje, la mudanza, la paga extra…</p>
+    ${puntuales.length ? puntuales.map((p, i) => `<div class="cat"><span>${mesTxt(p.mes)}: ${esc(p.nombre || (p.tipo === 'i' ? 'Ingreso' : 'Gasto'))} <b>${p.tipo === 'i' ? '+' : '−'}${eur(+p.importe)}</b></span><button class="btn sec" data-accion="borrarPuntual" data-i="${i}">✕</button></div>`).join('') : '<p class="gris">Ninguno todavía.</p>'}
+    <label class="campo">Qué es <input id="puntNombre" class="buscar" placeholder="Por ejemplo, viaje a Lisboa"></label>
+    <label class="campo">Cuándo <input id="puntMes" type="month" min="${P.mes}"></label>
+    <label class="campo">Importe <input id="puntImporte" type="number" inputmode="decimal" min="0" step="10"></label>
+    <label class="campo">Es un <select id="puntTipo" class="buscar"><option value="g">gasto</option><option value="i">ingreso</option></select></label>
+    <p><button class="btn sec" data-accion="addPuntual">Añadir</button></p></details>`;
+}
+function alertaSuave(btn, msg) {
+  const s = document.createElement('span'); s.className = 'gris'; s.style.marginLeft = '8px'; s.textContent = msg;
+  btn.after(s); setTimeout(() => s.remove(), 3000);
+}
+function guardarCfgParcial(cambio) {
+  const r = leerRecuerdos(), c = Object.assign(leerCfg(), cambio, {t: new Date().toISOString()});
+  r._cfg = JSON.stringify(c);
+  try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
+  Sincro.pronto(); pintarCuentas();
 }
 
 async function pintarCuentas() {
@@ -927,7 +989,7 @@ async function pintarCuentas() {
   const ant = mesesAntes(mes, 3).filter(k => pm[k] && pm[k].length);  // meses anteriores con datos
   const g = (lista, grupo) => lista.filter(a => grupoDe(a) === grupo);
   if (!todos_.length) {
-    for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu', 'cSemana']) $(id).hidden = true;
+    for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu', 'cSemana', 'cPlan']) $(id).hidden = true;
     $('cQueda').hidden = false;
     $('cQueda').innerHTML = '<h3>Aquí verás cuánto te queda</h3><p>Sube tus facturas, tickets y capturas del banco, y te digo cuánto puedes gastar este mes y esta semana, cómo vas y cómo acabarás el año.</p><p><button class="btn oro" data-ir="subir">📎 Subir</button> <button class="btn sec" style="color:#fff;border-color:#fff" data-accion="demo">Ver el ejemplo</button></p>';
     return;
@@ -942,21 +1004,44 @@ async function pintarCuentas() {
   // LA META: «quiero llegar a tal fecha con tanto dinero» → cuánto puedo gastar cada semana en comida y día a día.
   // Lo que tendrá = lo que tiene hoy + (lo que entra − fijos − lo variable que no va en la semana) × meses que quedan.
   // Lo que sobre por encima de la meta, repartido entre las semanas que quedan, es su tope semanal.
+  // «TU PLAN» (Mapi, 16/11): la app no debe suponer que el futuro es igual que el pasado. Cada gasto que no va en la
+  // semana empieza con su media de 6 meses, pero ella puede poner su cifra, cambios con fecha («desde feb-2027 el
+  // alquiler 730») y gastos o ingresos puntuales («Lisboa 320 € en dic»). La meta se calcula mes a mes con eso.
   const ant6 = mesesAntes(mes, 6).filter(k => pm[k] && pm[k].length);
-  const med = f => ant6.length ? media(ant6.map(k => f(pm[k]))) : 0;
-  const ingresoMedia = cfg.ingreso > 0 ? +cfg.ingreso : (ant6.length ? med(l => suma(g(l, 'entra'))) : ingreso);
-  const fijosMedia = ant6.length ? med(l => suma(g(l, 'fijos'))) : fijosPrev;
-  const fueraMedia = med(l => suma(l.filter(a => a.tipo === 'g' && (grupoDe(a) === 'extra' || (grupoDe(a) === 'dia' && (FUERA_SEMANA.includes(a.categoria) || a.concepto === 'Bizum del mes (neto)'))))));
+  const enSemana = a => a.tipo === 'g' && grupoDe(a) === 'dia' && !FUERA_SEMANA.includes(a.categoria) && a.concepto !== 'Bizum del mes (neto)';
+  const mediasCat = {};
+  for (const k of ant6) for (const a of pm[k]) if (a.tipo === 'g' && !enSemana(a)) mediasCat[a.categoria] = (mediasCat[a.categoria] || 0) + a.importe / ant6.length;
+  const ingresoMedia = cfg.ingreso > 0 ? +cfg.ingreso : (ant6.length ? media(ant6.map(k => suma(g(pm[k], 'entra')))) : ingreso);
+  const planCfg = cfg.plan || {}, cambios = cfg.cambios || [], puntuales = cfg.puntuales || [];
+  const catsPlan = [...new Set([...Object.keys(mediasCat), ...Object.keys(planCfg), ...cambios.map(c => c.cat).filter(c => c !== 'ingreso')])].filter(c => CATS[c]);
+  const valorMes = (cat, ym) => {                       // lo previsto para esa categoría en ese mes
+    const c = cambios.filter(x => x.cat === cat && x.desde <= ym).sort((a, b) => b.desde.localeCompare(a.desde))[0];
+    if (c) return +c.importe;
+    if (cat === 'ingreso') return ingresoMedia;
+    return planCfg[cat] != null ? +planCfg[cat] : (mediasCat[cat] || 0);
+  };
+  window.__plan = {mediasCat, catsPlan, valorMes, ingresoMedia, mes};
   let plan = null;
   if (cfg.objetivo > 0 && cfg.fecha && cfg.saldo != null) {
     const fin = new Date(cfg.fecha + 'T12:00'), dias = (fin - hoy) / 864e5;
     if (dias > 7) {
-      const meses = dias / 30.44, semanas = dias / 7;
-      const disponible = +cfg.saldo + meses * (ingresoMedia - fijosMedia - fueraMedia) - cfg.objetivo;
-      plan = {tope: disponible / semanas, meses, semanas, ingresoMedia, fijosMedia, fueraMedia, objetivo: +cfg.objetivo, fin, falta: disponible < 0 ? -disponible : 0};
+      let neto = 0, entraT = 0, saleT = 0, mesesT = 0;
+      for (let d = new Date(hoy.getFullYear(), hoy.getMonth(), 1, 12); d <= fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1, 12)) {
+        const ym = isoDia(d).slice(0, 7), diasMes = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        // peso del mes: el actual solo por lo que queda; el último hasta la fecha de la meta
+        const ini = ym === mes ? hoy.getDate() : 1, finD = ym === isoDia(fin).slice(0, 7) ? fin.getDate() : diasMes;
+        const peso = Math.max(0, finD - ini + 1) / diasMes;
+        const entra = valorMes('ingreso', ym), sale = catsPlan.reduce((s, c) => s + valorMes(c, ym), 0);
+        const punt = puntuales.filter(p => p.mes === ym).reduce((s, p) => s + (p.tipo === 'i' ? +p.importe : -p.importe), 0);
+        neto += peso * (entra - sale) + punt; entraT += peso * entra; saleT += peso * sale; mesesT += peso;
+      }
+      const semanas = dias / 7, disponible = +cfg.saldo + neto - cfg.objetivo;
+      plan = {tope: disponible / semanas, meses: mesesT, semanas, objetivo: +cfg.objetivo, fin, falta: disponible < 0 ? -disponible : 0,
+        ingresoMedia: entraT / mesesT, fijosMedia: saleT / mesesT, fueraMedia: 0, conPlan: true};
     }
   }
   pintarSemana(todos_, cfg, plan);
+  pintarPlan(cfg);
   // Mapi: «el segundo cuadro no lo entiendo si ya está arriba la semana» → con la semana a la vista, el del mes sobra
   $('cQueda').hidden = !$('cSemana').hidden;
   const ahorroMes = plan ? Math.max(0, (plan.objetivo - cfg.saldo) / plan.meses) : (cfg.ahorro > 0 ? cfg.ahorro / 12 : 0);
@@ -1106,11 +1191,29 @@ document.addEventListener('click', async (ev) => {
   if (a === 'guardarCfg') {
     const num = id => { const v = $(id).value.trim(); return v === '' ? undefined : Math.max(id === 'cfgSaldo' ? -1e9 : 0, +v.replace(',', '.')); };
     const r = leerRecuerdos(); const viejo = leerCfg();
-    r._cfg = JSON.stringify({ahorro: viejo.ahorro, objetivo: num('cfgObjetivo'), fecha: $('cfgFecha').value || undefined, saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), topes: viejo.topes, t: new Date().toISOString()});
+    r._cfg = JSON.stringify(Object.assign(viejo, {objetivo: num('cfgObjetivo'), fecha: $('cfgFecha').value || undefined, saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), t: new Date().toISOString()}));
     try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
     $('cfgOk').textContent = '✓ Guardado'; setTimeout(() => $('cfgOk').textContent = '', 2500);
     Sincro.pronto(); pintarCuentas();
   }
+  if (a === 'guardarPlan') {
+    const plan = {};
+    document.querySelectorAll('[data-plan]').forEach(i => { const v = String(i.value).trim(); if (v !== '' && +v.replace(',', '.') >= 0) plan[i.dataset.plan] = +v.replace(',', '.'); });
+    const ing = String(document.querySelector('[data-plan-ingreso]').value).trim();
+    guardarCfgParcial({plan, ingreso: ing === '' ? undefined : +ing.replace(',', '.')});
+  }
+  if (a === 'addCambio') {
+    const cat = $('nuevoCat').value, desde = $('nuevoDesde').value, imp = String($('nuevoImporte').value).replace(',', '.');
+    if (!desde || imp === '' || !(+imp >= 0)) { alertaSuave(b, 'Pon el mes y el importe.'); return; }
+    guardarCfgParcial({cambios: [...(leerCfg().cambios || []), {cat, desde, importe: +imp}]});
+  }
+  if (a === 'borrarCambio') { const l = [...(leerCfg().cambios || [])]; l.splice(+b.dataset.i, 1); guardarCfgParcial({cambios: l}); }
+  if (a === 'addPuntual') {
+    const nombre = $('puntNombre').value.trim(), m = $('puntMes').value, imp = String($('puntImporte').value).replace(',', '.');
+    if (!m || !(+imp > 0)) { alertaSuave(b, 'Pon el mes y el importe.'); return; }
+    guardarCfgParcial({puntuales: [...(leerCfg().puntuales || []), {nombre, mes: m, importe: +imp, tipo: $('puntTipo').value}]});
+  }
+  if (a === 'borrarPuntual') { const l = [...(leerCfg().puntuales || [])]; l.splice(+b.dataset.i, 1); guardarCfgParcial({puntuales: l}); }
   if (a === 'guardarTopes') {
     const topes = {};
     document.querySelectorAll('[data-tope]').forEach(i => { const v = +String(i.value).replace(',', '.'); if (v > 0) topes[i.dataset.tope] = v; });
