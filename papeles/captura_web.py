@@ -38,6 +38,43 @@ def leer(lineas_json, ref_iso):
     return json.dumps({"movimientos": out}, ensure_ascii=False)
 
 
+# Muchos bancos (y los Excel hechos a mano) traen una columna de categoría: «Compras / Ropa y complementos»,
+# «Alimentación», «Vehículo y transporte»… Si viene, manda ella: es lo que dice el banco o la propia clienta.
+_PISTAS = [
+    (r"hipoteca|alquiler|vivienda", "vivienda"),
+    (r"prestamo|renting|financiacion|tarjeta de credito|credito", "financiacion"),
+    (r"comunidad", "comunidad"),
+    (r"luz|electricidad|energia", "luz"), (r"\bgas\b|butano", "gas"), (r"agua", "agua"),
+    (r"telefono|internet|movil|fibra", "telefono"), (r"seguro", "seguros"),
+    (r"educacion|colegio|formacion|guarderia|universidad", "colegio"),
+    (r"impuesto|tasa|hacienda|multa", "impuestos"),
+    (r"suscripcion|apps|software|streaming", "suscripciones"),
+    (r"alimentacion|supermercado|super\b|comida", "super"),
+    (r"restaurante|cafeteria|bares?\b|comer fuera", "restaurantes"),
+    (r"belleza|cuidado personal|peluqueria|estetica|deporte|gimnasio", "belleza"),
+    (r"ropa|complementos|calzado|moda", "ropa"),
+    (r"salud|farmacia|medic|dentista|optica", "salud"),
+    (r"vehiculo|coche|gasolina|combustible|parking|aparcamiento|peaje|taller", "coche"),
+    (r"transporte|taxi|autobus|tren|metro", "transporte"),
+    (r"ocio|viaje|cine|espectaculo|cultura|hotel|regalo", "ocio"),
+    (r"limpieza|donativo|donacion|cuota de socio|ong", "otros"),
+    (r"compra|hogar|decoracion|electronica|bricolaje", "compras"),
+]
+_PISTAS_RX = [(re.compile(rx), cat) for rx, cat in _PISTAS]
+
+
+def categoria_de_pista(pista):
+    t = lector.plano(str(pista or "")).lower()
+    if not t.strip():
+        return None
+    # «Compras / Ropa y complementos»: lo de después de la barra es lo más concreto
+    for trozo in reversed([x.strip() for x in t.split("/") if x.strip()]):
+        for rx, cat in _PISTAS_RX:
+            if rx.search(trozo):
+                return cat
+    return None
+
+
 def clasificar(movs_json):
     """Movimientos que ya vienen limpios (Excel del banco): [{fecha ISO, importe con signo, concepto}].
     Devuelve el mismo formato que leer(), con el comercio, la clave y la categoría de siempre."""
@@ -49,7 +86,7 @@ def clasificar(movs_json):
         concepto = banco.tapar_tarjetas(str(m.get("concepto") or "")).replace("****", " ").strip() or "Movimiento"
         nombre = banco.nombre_comercio(concepto) or concepto
         tipo = "i" if imp > 0 else "g"
-        cat = "ingreso" if tipo == "i" else (lector.clasificar_comercio(concepto) or "duda")
+        cat = "ingreso" if tipo == "i" else (categoria_de_pista(m.get("pista")) or lector.clasificar_comercio(concepto) or "duda")
         out.append({"fecha": m["fecha"], "tipo": tipo, "importe": round(abs(imp), 2), "divisa": m.get("divisa") or "EUR",
                     "concepto": nombre, "clave": banco.clave_comercio(nombre), "categoria": cat})
     return json.dumps({"movimientos": out}, ensure_ascii=False)

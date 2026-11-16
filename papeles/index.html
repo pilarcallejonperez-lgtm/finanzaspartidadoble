@@ -433,9 +433,10 @@ function columnasExcel(filas) {
   const es = (t, ...pal) => pal.some(p => t === p || t.startsWith(p + ' ') || t.includes(p));
   for (let i = 0; i < Math.min(filas.length, 40); i++) {
     const t = (filas[i] || []).map(sinAcentos);
-    const col = {fecha: -1, concepto: -1, importe: -1, cargo: -1, abono: -1, divisa: -1};
+    const col = {fecha: -1, concepto: -1, importe: -1, cargo: -1, abono: -1, divisa: -1, categoria: -1};
     t.forEach((x, j) => {
       if (!x) return;
+      if (col.categoria < 0 && es(x, 'categoria', 'category', 'partida', 'tipo de gasto', 'subcategoria')) { col.categoria = j; return; }
       if (col.fecha < 0 && es(x, 'fecha operacion', 'f. operacion', 'fecha oper', 'fecha') && !es(x, 'fecha valor', 'f. valor')) col.fecha = j;
       else if (col.concepto < 0 && es(x, 'concepto', 'descripcion', 'movimiento', 'detalle', 'operacion', 'comercio', 'beneficiario')) col.concepto = j;
       else if (col.importe < 0 && (x === 'importe' || es(x, 'importe (', 'importe eur', 'importe en', 'cantidad', 'monto', 'amount'))) col.importe = j;
@@ -477,7 +478,8 @@ async function movimientosExcel(buf) {
       }
       if (!imp) continue;
       const div = col.divisa >= 0 ? String(f[col.divisa] || '').trim().toUpperCase() : '';
-      movs.push({fecha, importe: imp, concepto: String(f[col.concepto] ?? '').replace(/\s+/g, ' ').trim(), divisa: /^[A-Z]{3}$/.test(div) ? div : 'EUR'});
+      movs.push({fecha, importe: imp, concepto: String(f[col.concepto] ?? '').replace(/\s+/g, ' ').trim(), divisa: /^[A-Z]{3}$/.test(div) ? div : 'EUR',
+        pista: col.categoria >= 0 ? String(f[col.categoria] ?? '').trim() : ''});
     }
     if (movs.length) return movs;
   }
@@ -904,7 +906,8 @@ async function pintarCuentas() {
   const ant = mesesAntes(mes, 3).filter(k => pm[k] && pm[k].length);  // meses anteriores con datos
   const g = (lista, grupo) => lista.filter(a => grupoDe(a) === grupo);
   if (!todos_.length) {
-    for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu']) $(id).hidden = true;
+    for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu', 'cSemana']) $(id).hidden = true;
+    $('cQueda').hidden = false;
     $('cQueda').innerHTML = '<h3>Aquí verás cuánto te queda</h3><p>Sube tus facturas, tickets y capturas del banco, y te digo cuánto puedes gastar este mes y esta semana, cómo vas y cómo acabarás el año.</p><p><button class="btn oro" data-ir="subir">📎 Subir</button> <button class="btn sec" style="color:#fff;border-color:#fff" data-accion="demo">Ver el ejemplo</button></p>';
     return;
   }
@@ -933,6 +936,8 @@ async function pintarCuentas() {
     }
   }
   pintarSemana(todos_, cfg, plan);
+  // Mapi: «el segundo cuadro no lo entiendo si ya está arriba la semana» → con la semana a la vista, el del mes sobra
+  $('cQueda').hidden = !$('cSemana').hidden;
   const ahorroMes = plan ? Math.max(0, (plan.objetivo - cfg.saldo) / plan.meses) : (cfg.ahorro > 0 ? cfg.ahorro / 12 : 0);
   const diaGastado = suma(g(delMes, 'dia')) + suma(g(delMes, 'extra'));
   const queda = ingreso - fijosPrev - ahorroMes - diaGastado;
