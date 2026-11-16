@@ -208,19 +208,23 @@ html.pd-cerrado #pd-candado{display:flex}
     <pre id="out" tabindex="0"></pre>
     <p class="estado" id="estado" aria-live="polite"></p>
     <div class="como">
-      <strong>Dónde pegarlas</strong>
+      <strong>Cómo ponerla en marcha (2 minutos)</strong>
       <ol>
-        <li>Abre tu chat de inteligencia artificial y crea un proyecto nuevo (o busca «instrucciones personalizadas»).</li>
-        <li>Pega el texto en el apartado de instrucciones y guarda.</li>
-        <li>Escríbele «Buenos días» y mira cómo te organiza el día.</li>
+        <li><b>Copia las instrucciones</b> con el botón de arriba.</li>
+        <li><b>En ChatGPT:</b> en el menú de la izquierda, «Proyectos» → «Nuevo proyecto» → ponle el nombre de tu asistente → toca los tres puntos o el engranaje del proyecto → «Instrucciones» → pega y guarda.<br><b>En Claude:</b> «Proyectos» → «Crear proyecto» → «Instrucciones del proyecto» → pega y guarda.<br><span style="opacity:.8">Si no ves «Proyectos», busca en Ajustes «Personalización» o «Instrucciones personalizadas» y pégalas ahí.</span></li>
+        <li><b>Abre un chat dentro de ese proyecto</b> y escríbele este primer mensaje:
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><code id="primero" style="background:#fff;padding:8px 10px;border-radius:8px;border:1px solid #d9cdb3"></code><button type="button" id="copiar2" style="padding:8px 12px">Copiar</button></div>
+          Te explicará cómo vais a trabajar, te dirá por dónde empezaría y te hará una sola pregunta para arrancar.</li>
+        <li><b>A partir de ahí, prueba a decirle:</b><ul id="ejemplos" style="margin:.4rem 0 0"></ul></li>
       </ol>
+      <p style="margin-top:8px;opacity:.8">Siempre que no sepas qué pedirle, escríbele «menú».</p>
     </div>
   </section>
 
   <aside class="cta">
     <h3>¿Quieres una asistente que trabaje sola?</h3>
     <p>Esto es la versión de bolsillo. Nosotras te la montamos <strong>conectada a tu correo, tu agenda y tus documentos</strong>: te prepara el resumen del día, te avisa de los plazos y te deja los correos redactados para que solo revises.</p>
-    <p>Escríbenos por privado a <strong>@finanzas.partidadoble</strong> o comenta <strong>ME INTERESA</strong> en nuestro último reel. Soy tu contable 🧾</p>
+    <p>Escríbenos por privado a <strong>@finanzas.partidadoble</strong> o comenta <strong>ME INTERESA</strong> en nuestro último reel. Soy tu contable.</p>
     <p><a href="https://finanzaspartidadoble.es/" style="display:inline-block;margin-top:6px;padding:12px 18px;border-radius:6px;background:#c9ad66;color:#0c211b;font-weight:700;text-decoration:none">Pide tu consulta gratuita</a></p>
   </aside>
 </main>
@@ -251,12 +255,25 @@ function generar(){
   l.push('- Primero la conclusión; el detalle solo si hace falta.');
   if(ts.length){l.push('');l.push('EN QUÉ ME AYUDAS');ts.forEach(t=>l.push('- '+t));}
   l.push('');
+  l.push('CÓMO EMPEZAMOS');
+  const COMO={dia:'Organización diaria: cada mañana me dices «buenos días» y preparamos tus prioridades.',correos:'Mensajes y correos: me cuentas qué necesitas y te preparo el texto listo para enviar.',gastos:'Gastos: me vas diciendo lo que gastas y en qué, y llevamos el control del mes por categorías.',plazos:'Plazos y recordatorios: me dices las fechas importantes y te las recuerdo.',facturas:'Facturas y recibos: me los mandas (foto o PDF) y compruebo que todo esté correcto.',redes:'Redes sociales: te doy ideas y textos listos para publicar.',ayudas:'Ayudas y subvenciones: te digo cuáles pueden encajarte y dónde comprobarlas.'};
+  const marcadas=[...document.querySelectorAll('#tareas input:checked')].map(x=>x.value);
+  l.push(`- La primera vez que te escriba, sin que te lo pida, preséntate en una línea como ${a}, dime que no hay que instalar ni configurar nada más y que ya podemos empezar a trabajar juntas. Después escribe «Te propongo hacerlo así:» y esta lista numerada, explicando en una frase cómo funciona cada cosa:`);
+  marcadas.forEach((k,i)=>l.push(`   ${i+1}. ${COMO[k]}`));
+  if(marcadas.length){l.push(`  Luego dime por cuál empezarías tú (la que más me ayude según lo que sabes de mí) y hazme UNA sola pregunta fácil para arrancar con ella.`);}
+  l.push('- Termina siempre tus respuestas proponiendo el siguiente paso o con una pregunta concreta. Nunca te quedes esperando sin más.');
+  l.push('- Si te escribo «menú», dime en una lista corta todo lo que puedes hacer por mí, con un ejemplo de cada cosa.');
+  l.push('- Si te escribo «resumen», dime en cinco puntos lo que hemos hablado y lo que queda pendiente.');
+  l.push('');
   l.push('REGLAS DE ORO');
   l.push('- Tú propones y yo decido: nunca envíes, borres ni compres nada por mí.');
   l.push('- No inventes datos, cifras ni plazos. Si no lo sabes, dilo.');
   l.push('- Mis datos personales y los de mis clientes no salen de esta conversación.');
   l.push('- Si algo tiene que ver con impuestos o dinero importante, recuérdame que lo confirme con mi asesora.');
   $('out').textContent=l.join('\n');
+  $('primero').textContent=`Hola, ${a}. Empezamos: preséntate y hazme las preguntas para conocerme.`;
+  const EJ={dia:'«Buenos días»',correos:'«Redáctame un correo para pedir presupuesto a un proveedor»',gastos:'«He gastado 45 € en el súper: ¿cuánto llevo este mes?»',plazos:'«¿Qué fechas tengo que tener en cuenta este trimestre?»',facturas:'Pégale el texto de una factura: «Revisa esta factura»',redes:'«Dame tres ideas para Instagram esta semana»',ayudas:'«¿Hay alguna ayuda para mi negocio? Dime dónde comprobarla»'};
+  $('ejemplos').innerHTML=[...document.querySelectorAll('#tareas input:checked')].map(x=>'<li>'+EJ[x.value]+'</li>').join('')||'<li>«Menú»</li>';
 }
 $('f').addEventListener('input',generar);$('f').addEventListener('change',generar);
 $('f').addEventListener('submit',e=>e.preventDefault());
@@ -265,6 +282,7 @@ $('copiar').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(t);$('estado').textContent='Copiadas. Ahora pégalas en tu chat.';}
   catch(e){const r=document.createRange();r.selectNodeContents($('out'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('estado').textContent='Texto seleccionado: pulsa Copiar en tu teclado o en el menú.';}
 });
+$('copiar2').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('primero').textContent);$('copiar2').textContent='Copiado';setTimeout(()=>$('copiar2').textContent='Copiar',2000)}catch(e){}});
 generar();
 </script>
 
