@@ -215,12 +215,12 @@ html.pd-cerrado #pd-candado{display:flex}
     <div class="tarjeta" id="cAnio"></div>
     <div class="tarjeta" id="cPresu"></div>
     <div class="tarjeta">
-      <h3>Tus números (opcional)</h3>
-      <p class="gris">Con esto afino lo que te queda y cómo acabarás el año. Si lo dejas en blanco, lo calculo yo con lo que subes.</p>
-      <label class="campo">¿Cuánto quieres ahorrar al año? <input id="cfgAhorro" type="number" inputmode="decimal" min="0" step="50" placeholder="Por ejemplo, 2400"></label>
+      <h3>Tu meta</h3>
+      <p class="gris">Dime con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana para conseguirlo.</p>
+      <label class="campo">¿Con cuánto dinero quieres llegar? <input id="cfgObjetivo" type="number" inputmode="decimal" min="0" step="100" placeholder="Por ejemplo, 4000"></label>
+      <label class="campo">¿Para cuándo? <input id="cfgFecha" type="date" min="2026-01-01"></label>
       <label class="campo">¿Cuánto tienes hoy en el banco? <input id="cfgSaldo" type="number" inputmode="decimal" step="10" placeholder="Por ejemplo, 3500"></label>
-      <label class="campo">¿Cuánto ganas al mes? <input id="cfgIngreso" type="number" inputmode="decimal" min="0" step="10" placeholder="Lo saco de tus nóminas"></label>
-      <label class="campo">¿Cuánto quieres gastar a la semana en comida y día a día? <input id="cfgTope" type="number" inputmode="decimal" min="0" step="5" placeholder="Lo calculo con tus últimas semanas"></label>
+      <label class="campo">¿Cuánto ganas al mes? (opcional) <input id="cfgIngreso" type="number" inputmode="decimal" min="0" step="10" placeholder="Si lo dejas en blanco, lo saco de lo que te entra"></label>
       <p><button class="btn" data-accion="guardarCfg">Guardar</button> <span id="cfgOk" class="gris"></span></p>
     </div>
   </section>
@@ -854,7 +854,7 @@ const COMIDA = ['super', 'restaurantes'];
 const FUERA_SEMANA = ['coche', 'transporte', 'otros'];
 const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 function lunesDe(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
-function pintarSemana(lista, cfg) {
+function pintarSemana(lista, cfg, plan) {
   const caja = $('cSemana');
   const diaADia = lista.filter(a => a.tipo === 'g' && grupoDe(a) === 'dia' && !FUERA_SEMANA.includes(a.categoria) && a.concepto !== 'Bizum del mes (neto)');
   if (!diaADia.length) { caja.hidden = true; return; }
@@ -865,7 +865,16 @@ function pintarSemana(lista, cfg) {
   const previas = [];
   for (let i = 1; i <= 8; i++) { const l = new Date(lunes); l.setDate(l.getDate() - 7 * i); const s = semanaDe(l); if (s.length) previas.push({l, total: suma(s)}); }
   const auto = previas.length ? Math.round(media(previas.map(p => p.total)) / 5) * 5 : 0;
-  const tope = cfg.tope > 0 ? +cfg.tope : auto;
+  const fechaLarga = d => d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'});
+  if (plan && plan.tope <= 0) {
+    caja.hidden = false;
+    caja.innerHTML = `<p class="gris">Tu meta: ${eur(plan.objetivo)} el ${fechaLarga(plan.fin)}</p>
+      <p class="grande">No llegas</p>
+      <p>Al ritmo de ahora te faltarían unos <b>${eur(plan.falta)}</b>, aunque no gastaras nada en comida ni en el día a día.</p>
+      <p class="gris" style="font-size:.85rem">Entra ${eur(plan.ingresoMedia)}/mes · fijos ${eur(plan.fijosMedia)}/mes · otros gastos ${eur(plan.fueraMedia)}/mes. Prueba con una meta más pequeña o una fecha más lejana, o mira qué fijo puedes bajar.</p>`;
+    return;
+  }
+  const tope = plan ? Math.floor(plan.tope) : auto;
   if (!tope) { caja.hidden = true; return; }
   const esta = semanaDe(lunes), gastado = suma(esta), comida = suma(esta.filter(a => COMIDA.includes(a.categoria)));
   const quedan = tope - gastado;
@@ -879,15 +888,17 @@ function pintarSemana(lista, cfg) {
     <p class="grande">${eur(Math.max(0, quedan))}</p>
     <p>${quedan > 0 ? `Unos <b>${eur(quedan / dias)}</b> al día hasta el domingo (${dias} ${dias === 1 ? 'día' : 'días'}).` : `Te has pasado <b>${eur(-quedan)}</b>: frena hasta el lunes, que empieza otra semana.`}</p>
     <div style="background:rgba(255,255,255,.25);border-radius:6px;height:8px;margin:8px 0"><div style="width:${pct}%;height:8px;border-radius:6px;background:${quedan >= 0 ? '#c9a961' : '#e07a5f'}"></div></div>
-    <p class="gris" style="font-size:.85rem">Llevas ${eur(gastado)} de ${eur(tope)} · comida ${eur(comida)} · resto ${eur(gastado - comida)}${cfg.tope > 0 ? '' : ' · tope calculado con tus últimas semanas (cámbialo abajo, en «Tus números»)'}</p>
+    <p class="gris" style="font-size:.85rem">Llevas ${eur(gastado)} de ${eur(tope)} · comida ${eur(comida)} · resto ${eur(gastado - comida)}</p>
+    <p class="gris" style="font-size:.85rem">${plan
+      ? `🎯 Para llegar al ${fechaLarga(plan.fin)} con <b>${eur(plan.objetivo)}</b>, puedes gastar <b>${eur(tope)} a la semana</b> en comida y día a día. (Entra ${eur(plan.ingresoMedia)}/mes · fijos ${eur(plan.fijosMedia)}/mes · otros gastos ${eur(plan.fueraMedia)}/mes)`
+      : '🎯 Pon abajo, en «Tu meta», con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana. Mientras, uso la media de tus últimas semanas.'}</p>
     ${historia ? `<p class="gris" style="font-size:.85rem;margin-top:6px">${historia}</p>` : ''}`;
 }
 
 async function pintarCuentas() {
   const ps = await vivos(), cfg = leerCfg();
-  $('cfgAhorro').value = cfg.ahorro ?? ''; $('cfgSaldo').value = cfg.saldo ?? ''; $('cfgIngreso').value = cfg.ingreso ?? ''; $('cfgTope').value = cfg.tope ?? '';
+  $('cfgObjetivo').value = cfg.objetivo ?? ''; $('cfgFecha').value = cfg.fecha || ''; $('cfgSaldo').value = cfg.saldo ?? ''; $('cfgIngreso').value = cfg.ingreso ?? '';
   const todos_ = apuntes(ps), pm = porMes(todos_);
-  pintarSemana(todos_, cfg);
   const hoy = new Date(), mes = hoyISO().slice(0, 7), anio = hoy.getFullYear();
   const delMes = pm[mes] || [];
   const ant = mesesAntes(mes, 3).filter(k => pm[k] && pm[k].length);  // meses anteriores con datos
@@ -904,7 +915,25 @@ async function pintarCuentas() {
   // fijos previstos del mes: lo ya pagado o, si es más, la media de los meses anteriores
   const fijosPagados = suma(g(delMes, 'fijos'));
   const fijosPrev = Math.max(fijosPagados, ant.length ? media(ant.map(k => suma(g(pm[k], 'fijos')))) : 0);
-  const ahorroMes = cfg.ahorro > 0 ? cfg.ahorro / 12 : 0;
+  // LA META: «quiero llegar a tal fecha con tanto dinero» → cuánto puedo gastar cada semana en comida y día a día.
+  // Lo que tendrá = lo que tiene hoy + (lo que entra − fijos − lo variable que no va en la semana) × meses que quedan.
+  // Lo que sobre por encima de la meta, repartido entre las semanas que quedan, es su tope semanal.
+  const ant6 = mesesAntes(mes, 6).filter(k => pm[k] && pm[k].length);
+  const med = f => ant6.length ? media(ant6.map(k => f(pm[k]))) : 0;
+  const ingresoMedia = cfg.ingreso > 0 ? +cfg.ingreso : (ant6.length ? med(l => suma(g(l, 'entra'))) : ingreso);
+  const fijosMedia = ant6.length ? med(l => suma(g(l, 'fijos'))) : fijosPrev;
+  const fueraMedia = med(l => suma(l.filter(a => a.tipo === 'g' && (grupoDe(a) === 'extra' || (grupoDe(a) === 'dia' && (FUERA_SEMANA.includes(a.categoria) || a.concepto === 'Bizum del mes (neto)'))))));
+  let plan = null;
+  if (cfg.objetivo > 0 && cfg.fecha && cfg.saldo != null) {
+    const fin = new Date(cfg.fecha + 'T12:00'), dias = (fin - hoy) / 864e5;
+    if (dias > 7) {
+      const meses = dias / 30.44, semanas = dias / 7;
+      const disponible = +cfg.saldo + meses * (ingresoMedia - fijosMedia - fueraMedia) - cfg.objetivo;
+      plan = {tope: disponible / semanas, meses, semanas, ingresoMedia, fijosMedia, fueraMedia, objetivo: +cfg.objetivo, fin, falta: disponible < 0 ? -disponible : 0};
+    }
+  }
+  pintarSemana(todos_, cfg, plan);
+  const ahorroMes = plan ? Math.max(0, (plan.objetivo - cfg.saldo) / plan.meses) : (cfg.ahorro > 0 ? cfg.ahorro / 12 : 0);
   const diaGastado = suma(g(delMes, 'dia')) + suma(g(delMes, 'extra'));
   const queda = ingreso - fijosPrev - ahorroMes - diaGastado;
   const finMes = new Date(anio, hoy.getMonth() + 1, 0).getDate(), diasQuedan = finMes - hoy.getDate() + 1;
@@ -1037,7 +1066,8 @@ document.addEventListener('click', async (ev) => {
   }
   if (a === 'guardarCfg') {
     const num = id => { const v = $(id).value.trim(); return v === '' ? undefined : Math.max(id === 'cfgSaldo' ? -1e9 : 0, +v.replace(',', '.')); };
-    const r = leerRecuerdos(); r._cfg = JSON.stringify({ahorro: num('cfgAhorro'), saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), tope: num('cfgTope'), t: new Date().toISOString()});
+    const r = leerRecuerdos(); const viejo = leerCfg();
+    r._cfg = JSON.stringify({ahorro: viejo.ahorro, objetivo: num('cfgObjetivo'), fecha: $('cfgFecha').value || undefined, saldo: num('cfgSaldo'), ingreso: num('cfgIngreso'), t: new Date().toISOString()});
     try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
     $('cfgOk').textContent = '✓ Guardado'; setTimeout(() => $('cfgOk').textContent = '', 2500);
     Sincro.pronto(); pintarCuentas();
