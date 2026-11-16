@@ -207,6 +207,7 @@ html.pd-cerrado #pd-candado{display:flex}
   <!-- MIS CUENTAS (panel de finanzas) -->
   <section id="v-cuentas" hidden>
     <h2>Mis cuentas</h2>
+    <div class="tarjeta" id="cGuia" hidden></div>
     <div class="tarjeta destacada" id="cSemana" hidden></div>
     <div class="tarjeta destacada" id="cQueda"></div>
     <div class="tarjeta" id="cMes"></div>
@@ -215,7 +216,7 @@ html.pd-cerrado #pd-candado{display:flex}
     <div class="tarjeta" id="cAnio"></div>
     <div class="tarjeta" id="cPresu"></div>
     <div class="tarjeta" id="cPlan" hidden></div>
-    <div class="tarjeta">
+    <div class="tarjeta" id="cMeta">
       <h3>Tu meta</h3>
       <p class="gris">Dime con cuánto dinero quieres llegar y para cuándo, y te digo cuánto puedes gastar cada semana para conseguirlo.</p>
       <label class="campo">¿Con cuánto dinero quieres llegar? <input id="cfgObjetivo" type="number" inputmode="decimal" min="0" step="100" placeholder="Por ejemplo, 4000"></label>
@@ -236,6 +237,11 @@ html.pd-cerrado #pd-candado{display:flex}
   <!-- AJUSTES -->
   <section id="v-ajustes" hidden>
     <h2>Ajustes</h2>
+    <div class="tarjeta">
+      <h3>Tu plan, paso a paso</h3>
+      <p class="gris">Te llevo de la mano: cuánto tienes, qué quieres conseguir, qué pagas cada mes y cuánto puedes gastar a la semana.</p>
+      <p><button class="btn" data-accion="abrirGuia">🧭 Preparar mi plan</button></p>
+    </div>
     <div class="tarjeta">
       <h3>Familia de ejemplo</h3>
       <p class="gris">Para ver cómo queda la app con papeles de verdad.</p>
@@ -969,6 +975,78 @@ function pintarPlan(cfg) {
     <label class="campo">Es un <select id="puntTipo" class="buscar"><option value="g">gasto</option><option value="i">ingreso</option></select></label>
     <p><button class="btn sec" data-accion="addPuntual">Añadir</button></p></details>`;
 }
+/* ASISTENTE DE PRIMEROS PASOS (Mapi, 16/11: «ponlo para que todo el mundo lo pueda hacer»).
+   La primera vez que entra en Cuentas (sin meta), la lleva de la mano; luego se abre desde Ajustes. */
+let GUIA_PASO = null, GUIA_FORZADA = false;
+const REPARTO_BASE = {super: .55, restaurantes: .15, ropa: .1, compras: .1, belleza: .05, ocio: .05};
+function pintarGuia(cfg, hayDatos) {
+  const caja = $('cGuia'), otras = ['cSemana', 'cQueda', 'cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu', 'cPlan', 'cMeta'];
+  const activa = GUIA_FORZADA || (!cfg.guiaHecha && !(cfg.objetivo > 0));
+  if (!activa) { caja.hidden = true; $('cMeta').hidden = false; return; }
+  GUIA_FORZADA = true;  // una vez empezada, sigue hasta «¡Listo!» o «Ahora no», aunque ya haya meta
+  otras.forEach(id => $(id).hidden = true);
+  if (GUIA_PASO == null || GUIA_PASO === 0 || !hayDatos) GUIA_PASO = hayDatos ? 1 : 0;
+  const P = window.__plan || {}, paso = GUIA_PASO, planCfg = cfg.plan || {};
+  const pie = `<p style="margin-top:12px">${paso > 1 ? '<button class="btn sec" data-accion="guiaAtras">← Atrás</button> ' : ''}${paso >= 1 && paso <= 4 ? '<button class="btn" data-accion="guiaSig">Siguiente →</button>' : ''}</p>
+    <p><button class="enlace" data-accion="guiaSaltar" style="background:none;border:0;padding:0;text-decoration:underline;color:inherit">Ahora no, lo haré más tarde</button></p>`;
+  const cab = `<p class="gris">🧭 Tu plan · paso ${Math.max(1, paso)} de 5</p>`;
+  let h = '';
+  if (paso === 0) {
+    h = `<p class="gris">🧭 Tu plan · antes de empezar</p><h3>Primero, tus movimientos</h3>
+      <p>Para decirte cuánto puedes gastar, necesito ver en qué se te va el dinero.</p>
+      <p>Lo más rápido: en la web o la app de tu banco, entra en «Movimientos», elige desde el 1 de enero y dale a «Descargar» o «Exportar» en Excel. Luego súbelo aquí. También valen capturas de pantalla de los movimientos.</p>
+      <p><button class="btn oro" data-ir="subir">📎 Subir mis movimientos</button></p>
+      <p><button class="enlace" data-accion="guiaSaltar" style="background:none;border:0;padding:0;text-decoration:underline;color:inherit">Ahora no, lo haré más tarde</button></p>`;
+  } else if (paso === 1) {
+    h = cab + `<h3>¿Cuánto tienes hoy en el banco?</h3><p class="gris">Suma lo de todas tus cuentas. Es para saber desde dónde partes; no sale de este móvil más que cifrado.</p>
+      <label class="campo">Hoy tengo <input id="gSaldo" type="number" inputmode="decimal" step="10" value="${cfg.saldo ?? ''}" placeholder="Por ejemplo, 2100"></label>` + pie;
+  } else if (paso === 2) {
+    const fechaDef = cfg.fecha || `${new Date().getFullYear() + 1}-12-31`;
+    h = cab + `<h3>¿Qué quieres conseguir?</h3><p class="gris">Con cuánto dinero quieres llegar y para cuándo. Por ejemplo, 4.000 € a final del año que viene.</p>
+      <label class="campo">Quiero llegar con <input id="gObj" type="number" inputmode="decimal" min="0" step="100" value="${cfg.objetivo ?? ''}" placeholder="Por ejemplo, 4000"></label>
+      <label class="campo">Para el <input id="gFecha" type="date" value="${fechaDef}"></label>` + pie;
+  } else if (paso === 3) {
+    const cats = [...(P.catsPlan || [])].sort((a, b) => (P.mediasCat[b] || 0) - (P.mediasCat[a] || 0));
+    h = cab + `<h3>Esto es lo que pagas cada mes</h3><p class="gris">Casa, recibos, préstamos, coche… He puesto tu media de los últimos meses. Cambia solo lo que vaya a ser distinto.</p>
+      <label class="campo">💶 Lo que te entra al mes <input data-gingreso type="number" inputmode="decimal" min="0" step="10" value="${Math.round(cfg.ingreso > 0 ? cfg.ingreso : (P.ingresoMedia || 0))}"></label>
+      ${cats.map(c => `<label class="campo">${ICO[c] || '•'} ${esc(CATS[c])} <input data-gplan="${c}" type="number" inputmode="decimal" min="0" step="5" value="${Math.round(planCfg[c] != null ? planCfg[c] : (P.mediasCat[c] || 0))}"></label>`).join('') || '<p class="gris">Aún no veo gastos fijos en lo que has subido.</p>'}` + pie;
+  } else if (paso === 4) {
+    const cambios = cfg.cambios || [], punt = cfg.puntuales || [];
+    const opciones = ['<option value="ingreso">💶 Lo que me entra</option>', ...Object.keys(CATS).filter(c => !['revisar', 'banco', 'duda', 'ingreso'].includes(c)).map(c => `<option value="${c}">${ICO[c] || '•'} ${esc(CATS[c])}</option>`)].join('');
+    h = cab + `<h3>¿Va a cambiar algo?</h3><p class="gris">Si sabes que algo va a ser distinto (te mudas, cambia tu nómina, tienes un viaje…), apúntalo. Si no, dale a «Siguiente».</p>
+      ${cambios.map(c => `<p>📅 Desde ${mesTxt(c.desde)}: ${c.cat === 'ingreso' ? 'lo que entra' : esc(CATS[c.cat] || c.cat)} → <b>${eur(+c.importe)}</b>/mes</p>`).join('')}
+      ${punt.map(p => `<p>📌 ${mesTxt(p.mes)}: ${esc(p.nombre)} <b>${p.tipo === 'i' ? '+' : '−'}${eur(+p.importe)}</b></p>`).join('')}
+      <details class="bloque"><summary><span>📅 Algo que cambia cada mes desde una fecha</span><span></span></summary>
+        <label class="campo">Qué <select id="gCat" class="buscar">${opciones}</select></label>
+        <label class="campo">Desde <input id="gDesde" type="month"></label>
+        <label class="campo">Nuevo importe al mes <input id="gImp" type="number" inputmode="decimal" min="0" step="5"></label>
+        <p><button class="btn sec" data-accion="guiaAddCambio">Añadir</button></p></details>
+      <details class="bloque"><summary><span>📌 Un gasto o ingreso de una sola vez</span><span></span></summary>
+        <label class="campo">Qué es <input id="gPNom" class="buscar" placeholder="Por ejemplo, viaje, mudanza, paga extra"></label>
+        <label class="campo">Cuándo <input id="gPMes" type="month"></label>
+        <label class="campo">Importe <input id="gPImp" type="number" inputmode="decimal" min="0" step="10"></label>
+        <label class="campo">Es un <select id="gPTipo" class="buscar"><option value="g">gasto</option><option value="i">ingreso</option></select></label>
+        <p><button class="btn sec" data-accion="guiaAddPuntual">Añadir</button></p></details>` + pie;
+  } else {
+    const plan = window.__planCalc;
+    if (!plan || plan.tope <= 0) {
+      h = cab + `<h3>Así no llegas… todavía</h3><p>${plan ? `Con lo que entra y lo que pagas cada mes, te faltarían unos <b>${eur(plan.falta)}</b> para tu meta, aunque no gastaras nada en el día a día.` : 'Me falta algún dato: lo que tienes hoy o tu meta.'}</p>
+        <p class="gris">Prueba con una meta más pequeña o una fecha más lejana, o repasa lo que pagas cada mes.</p>
+        <p><button class="btn sec" data-accion="guiaIr" data-paso="2">Cambiar mi meta</button> <button class="btn sec" data-accion="guiaIr" data-paso="3">Repasar lo que pago</button></p>`;
+    } else {
+      const tope = Math.floor(plan.tope), mesTope = tope * 52 / 12, ms = window.__mediasSemana || {};
+      const cats = Object.keys(REPARTO_BASE), tot = cats.reduce((s, c) => s + (ms[c] || 0), 0);
+      // 70 % según en qué suele gastar ella y 30 % un reparto base, para que ninguna cosa se quede a 0
+      const reparto = {}; for (const c of cats) reparto[c] = Math.max(0, Math.round(mesTope * (tot > 0 ? 0.7 * (ms[c] || 0) / tot + 0.3 * REPARTO_BASE[c] : REPARTO_BASE[c]) / 5) * 5);
+      h = cab + `<h3>🎯 Puedes gastar ${eur(tope)} a la semana</h3>
+        <p>Para llegar al ${plan.fin.toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})} con <b>${eur(plan.objetivo)}</b>, tu tope para comida y día a día es de <b>${eur(tope)} a la semana</b> (unos ${eur(mesTope)} al mes).</p>
+        <p class="gris">Te propongo este reparto al mes, según en qué sueles gastar. Cámbialo si quieres:</p>
+        ${cats.map(c => `<label class="campo">${ICO[c]} ${esc(CATS[c])} <input data-gtope="${c}" type="number" inputmode="decimal" min="0" step="5" value="${reparto[c]}"></label>`).join('')}
+        <p style="margin-top:12px"><button class="btn sec" data-accion="guiaAtras">← Atrás</button> <button class="btn oro" data-accion="guiaFin">¡Listo!</button></p>`;
+    }
+  }
+  caja.hidden = false; caja.innerHTML = h;
+}
 function alertaSuave(btn, msg) {
   const s = document.createElement('span'); s.className = 'gris'; s.style.marginLeft = '8px'; s.textContent = msg;
   btn.after(s); setTimeout(() => s.remove(), 3000);
@@ -991,6 +1069,7 @@ async function pintarCuentas() {
   if (!todos_.length) {
     for (const id of ['cMes', 'cTopes', 'cHormiga', 'cAnio', 'cPresu', 'cSemana', 'cPlan']) $(id).hidden = true;
     $('cQueda').hidden = false;
+    setTimeout(() => pintarGuia(cfg, false), 0);
     $('cQueda').innerHTML = '<h3>Aquí verás cuánto te queda</h3><p>Sube tus facturas, tickets y capturas del banco, y te digo cuánto puedes gastar este mes y esta semana, cómo vas y cómo acabarás el año.</p><p><button class="btn oro" data-ir="subir">📎 Subir</button> <button class="btn sec" style="color:#fff;border-color:#fff" data-accion="demo">Ver el ejemplo</button></p>';
     return;
   }
@@ -1044,6 +1123,12 @@ async function pintarCuentas() {
   pintarPlan(cfg);
   // Mapi: «el segundo cuadro no lo entiendo si ya está arriba la semana» → con la semana a la vista, el del mes sobra
   $('cQueda').hidden = !$('cSemana').hidden;
+  // para el asistente: el cálculo de la meta y lo que suele gastar en cada cosa de la semana
+  window.__planCalc = plan;
+  const ms = {};
+  for (const k of ant6) for (const a of pm[k]) if (enSemana(a)) ms[a.categoria] = (ms[a.categoria] || 0) + a.importe / ant6.length;
+  window.__mediasSemana = ms;
+  pintarGuia(cfg, true);
   const ahorroMes = plan ? Math.max(0, (plan.objetivo - cfg.saldo) / plan.meses) : (cfg.ahorro > 0 ? cfg.ahorro / 12 : 0);
   const diaGastado = suma(g(delMes, 'dia')) + suma(g(delMes, 'extra'));
   const queda = ingreso - fijosPrev - ahorroMes - diaGastado;
@@ -1195,6 +1280,44 @@ document.addEventListener('click', async (ev) => {
     try { localStorage.setItem('recuerdos', JSON.stringify(r)); } catch (e) {}
     $('cfgOk').textContent = '✓ Guardado'; setTimeout(() => $('cfgOk').textContent = '', 2500);
     Sincro.pronto(); pintarCuentas();
+  }
+  if (a === 'abrirGuia') { GUIA_FORZADA = true; GUIA_PASO = null; ir('cuentas'); return; }
+  if (a === 'guiaSaltar') { GUIA_FORZADA = false; GUIA_PASO = null; guardarCfgParcial({guiaHecha: true}); return; }
+  if (a === 'guiaAtras') { GUIA_PASO = Math.max(1, GUIA_PASO - 1); pintarCuentas(); return; }
+  if (a === 'guiaIr') { GUIA_PASO = +b.dataset.paso; pintarCuentas(); return; }
+  if (a === 'guiaSig') {
+    const n = s => { const v = String(s ?? '').trim().replace(',', '.'); return v === '' ? NaN : +v; };
+    if (GUIA_PASO === 1) {
+      const s = n($('gSaldo').value); if (isNaN(s)) { alertaSuave(b, 'Pon cuánto tienes hoy.'); return; }
+      GUIA_PASO = 2; guardarCfgParcial({saldo: s}); return;
+    }
+    if (GUIA_PASO === 2) {
+      const o = n($('gObj').value), f = $('gFecha').value;
+      if (!(o > 0) || !f || new Date(f + 'T12:00') <= new Date()) { alertaSuave(b, 'Pon una cantidad y una fecha futura.'); return; }
+      GUIA_PASO = 3; guardarCfgParcial({objetivo: o, fecha: f}); return;
+    }
+    if (GUIA_PASO === 3) {
+      const plan = Object.assign({}, leerCfg().plan || {});
+      document.querySelectorAll('[data-gplan]').forEach(i => { const v = n(i.value); if (!isNaN(v) && v >= 0) plan[i.dataset.gplan] = v; });
+      const ing = n(document.querySelector('[data-gingreso]').value);
+      GUIA_PASO = 4; guardarCfgParcial({plan, ingreso: ing > 0 ? ing : undefined}); return;
+    }
+    if (GUIA_PASO === 4) { GUIA_PASO = 5; pintarCuentas(); return; }
+  }
+  if (a === 'guiaAddCambio') {
+    const desde = $('gDesde').value, imp = String($('gImp').value).replace(',', '.');
+    if (!desde || imp === '' || !(+imp >= 0)) { alertaSuave(b, 'Pon el mes y el importe.'); return; }
+    guardarCfgParcial({cambios: [...(leerCfg().cambios || []), {cat: $('gCat').value, desde, importe: +imp}]}); return;
+  }
+  if (a === 'guiaAddPuntual') {
+    const m = $('gPMes').value, imp = String($('gPImp').value).replace(',', '.');
+    if (!m || !(+imp > 0)) { alertaSuave(b, 'Pon el mes y el importe.'); return; }
+    guardarCfgParcial({puntuales: [...(leerCfg().puntuales || []), {nombre: $('gPNom').value.trim(), mes: m, importe: +imp, tipo: $('gPTipo').value}]}); return;
+  }
+  if (a === 'guiaFin') {
+    const topes = Object.assign({}, leerCfg().topes || {});
+    document.querySelectorAll('[data-gtope]').forEach(i => { const v = +String(i.value).replace(',', '.'); if (v >= 0) topes[i.dataset.gtope] = v; });
+    GUIA_FORZADA = false; GUIA_PASO = null; guardarCfgParcial({topes, guiaHecha: true}); return;
   }
   if (a === 'guardarPlan') {
     const plan = {};
