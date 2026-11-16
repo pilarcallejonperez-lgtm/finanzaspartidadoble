@@ -25,7 +25,24 @@ const Nube = (() => {
     const limpio = t.replace(/\s+/g, '');
     return llaveValida(limpio) ? limpio : null;
   }
-  const carpeta = async llave => hex(await crypto.subtle.digest('SHA-256', deB64u(llave)));
+  // Seguridad (16/11/2026): de la llave sale una «contraseña de carpeta» (token) que va en la cabecera
+  // x-papeles-token; la carpeta es SHA-256 del token. Supabase solo deja leer, subir o borrar en la carpeta
+  // cuyo SHA-256 coincide con el token enviado, así que sin la llave no se ve ni se toca nada. El token
+  // no revela la llave (va por SHA-256 con una etiqueta), así que el cifrado de extremo a extremo sigue igual.
+  const tokens = new Map();   // carpeta -> token
+  async function token(llave) {
+    const et = te.encode('papeles-token:'), k = deB64u(llave), b = new Uint8Array(et.length + k.length);
+    b.set(et); b.set(k, et.length);
+    return hex(await crypto.subtle.digest('SHA-256', b));
+  }
+  async function carpeta(llave) {
+    const t = await token(llave), c = hex(await crypto.subtle.digest('SHA-256', te.encode(t)));
+    tokens.set(c, t);
+    return c;
+  }
+  const tokenDeRuta = p => tokens.get(String(p || '').split('/')[0]);
+  // La carpeta de antes del 16/11/2026 (SHA-256 de la llave): solo para pasar lo que haya allí a la nueva
+  const carpetaAntigua = async llave => hex(await crypto.subtle.digest('SHA-256', deB64u(llave)));
   const claves = new Map();
   function clave(llave) {
     if (!claves.has(llave)) claves.set(llave, crypto.subtle.importKey('raw', deB64u(llave), {name: 'AES-GCM'}, false, ['encrypt', 'decrypt']));
@@ -62,9 +79,11 @@ const Nube = (() => {
   // Supabase Storage (o el simulador local, que imita los mismos puntos de entrada)
   function almacen(cfg) {
     const base = String(cfg.url || '').replace(/\/+$/, '') + '/storage/v1', cubo = cfg.bucket || 'papeles';
-    const cab = extra => {
+    const cab = (extra, p) => {
       // clave pública de Supabase (anon o «publishable»): en apikey y en Authorization, como hace supabase-js
       const h = Object.assign({apikey: cfg.anon, Authorization: 'Bearer ' + cfg.anon}, extra || {});
+      const t = tokenDeRuta(p);
+      if (t) h['x-papeles-token'] = t;
       return h;
     };
     const ruta = p => p.split('/').map(encodeURIComponent).join('/');
@@ -79,28 +98,28 @@ const Nube = (() => {
     return {
       async subir(p, bytes, sobrescribir) {
         const r = await fetch(`${base}/object/${cubo}/${ruta(p)}`, {method: 'POST', body: bytes,
-          headers: cab({'Content-Type': 'application/octet-stream', 'x-upsert': sobrescribir ? 'true' : 'false', 'cache-control': 'max-age=0'})});
+          headers: cab({'Content-Type': 'application/octet-stream', 'x-upsert': sobrescribir ? 'true' : 'false', 'cache-control': 'max-age=0'}, p)});
         if (!r.ok) throw await fallo(r);
       },
       async bajar(p) {
-        const r = await fetch(`${base}/object/authenticated/${cubo}/${ruta(p)}`, {headers: cab(), cache: 'no-store'});
+        const r = await fetch(`${base}/object/authenticated/${cubo}/${ruta(p)}`, {headers: cab(null, p), cache: 'no-store'});
         if (!r.ok) throw await fallo(r);
         return new Uint8Array(await r.arrayBuffer());
       },
       async listar(prefijo) {
-        const r = await fetch(`${base}/object/list/${cubo}`, {method: 'POST', cache: 'no-store', headers: cab({'Content-Type': 'application/json'}),
+        const r = await fetch(`${base}/object/list/${cubo}`, {method: 'POST', cache: 'no-store', headers: cab({'Content-Type': 'application/json'}, prefijo),
           body: JSON.stringify({prefix: prefijo, limit: 100, offset: 0, sortBy: {column: 'name', order: 'asc'}})});
         if (!r.ok) throw await fallo(r);
         return (await r.json()).filter(o => o && o.id && o.name && !o.name.startsWith('.'));
       },
       async borrar(rutas) {
         if (!rutas.length) return;
-        const r = await fetch(`${base}/object/${cubo}`, {method: 'DELETE', headers: cab({'Content-Type': 'application/json'}), body: JSON.stringify({prefixes: rutas})});
+        const r = await fetch(`${base}/object/${cubo}`, {method: 'DELETE', headers: cab({'Content-Type': 'application/json'}, rutas[0]), body: JSON.stringify({prefixes: rutas})});
         if (!r.ok) throw await fallo(r);
       },
     };
   }
 
-  return {llaveValida, nuevaLlave, llaveDeTexto, carpeta, cifrar, descifrar, cifrarJSON, descifrarJSON,
+  return {llaveValida, nuevaLlave, llaveDeTexto, carpeta, carpetaAntigua, cifrar, descifrar, cifrarJSON, descifrarJSON,
           empaquetar, desempaquetar, almacen, aB64, deB64};
 })();

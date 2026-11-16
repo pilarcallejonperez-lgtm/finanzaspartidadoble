@@ -487,7 +487,31 @@ const Sincro = (() => {
     try { return await Nube.descifrarJSON(llave, await nube.bajar(await ruta('resumen.enc')), 'resumen'); }
     catch (e) { if (e.noExiste) return {v: 1, papeles: [], recuerdos: {}}; throw e; }
   }
+  // 16/11/2026: las carpetas pasan a ir protegidas con token. Una sola vez por dispositivo: lo que haya en la
+  // carpeta de antes se copia tal cual (ya va cifrado) a la nueva y se borra de la vieja.
+  async function migrar() {
+    if (ls.get('pd_migrado_token') === llave) return;
+    const vieja = await Nube.carpetaAntigua(llave), nueva = await Nube.carpeta(llave);
+    let lista = [];
+    try { lista = await nube.listar(vieja + '/buzon'); } catch (e) { lista = []; }
+    const rutas = [];
+    for (const o of lista) {
+      const p = 'buzon/' + o.name;
+      await nube.subir(nueva + '/' + p, await nube.bajar(vieja + '/' + p), true);
+      rutas.push(vieja + '/' + p);
+    }
+    try {
+      const r = await nube.bajar(vieja + '/resumen.enc');
+      let hayNuevo = true;
+      try { await nube.bajar(nueva + '/resumen.enc'); } catch (e) { if (e.noExiste) hayNuevo = false; else throw e; }
+      if (!hayNuevo) await nube.subir(nueva + '/resumen.enc', r, true);
+      rutas.push(vieja + '/resumen.enc');
+    } catch (e) { if (!e.noExiste && e.status !== 400) throw e; }
+    if (rutas.length) { try { await nube.borrar(rutas); } catch (e) {} }
+    ls.set('pd_migrado_token', llave);
+  }
   async function una() {
+    await migrar();
     const remoto = await bajarResumen();
     const locales = (await todos()).filter(p => !p.demo);
     const porId = new Map(locales.map(p => [p.id, p]));
