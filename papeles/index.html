@@ -226,6 +226,9 @@ html.pd-cerrado #pd-candado{display:flex}
 #pd-bienvenida ul{padding-left:1.2em;margin:.4em 0 .8em}
 #pd-bienvenida .gris{color:var(--tinta-2);font-size:.92rem}
 #pd-bienvenida .btn{display:block;width:100%;text-align:center;margin-top:14px}
+#pd-bienvenida .pd-paso{background:var(--papel);border:1px solid var(--linea);border-radius:14px;padding:12px 14px;margin:0 0 10px}
+#pd-bienvenida .pd-paso>b{color:var(--verde);font-size:1.05rem}#pd-bienvenida .pd-paso>span{color:var(--oro-texto);font-size:.88rem;font-weight:600;margin-left:4px}
+#pd-bienvenida .pd-paso p{margin:4px 0 0}
 </style>
 <div id="pd-bienvenida" hidden role="dialog" aria-labelledby="pd-bv-t">
   <div class="c">
@@ -240,7 +243,11 @@ html.pd-cerrado #pd-candado{display:flex}
       <li><b>Fotos</b> de tus tickets y facturas, o los <b>PDF</b> que te llegan por correo (luz, teléfono, seguros…).</li>
     </ul>
     <p>Con eso te digo <b>en qué se te va el dinero</b>, cuánto llevas gastado este mes y <b>cuánto puedes gastar cada semana</b> para llegar a tu meta.</p>
-    <p><b>Tenla siempre a mano:</b> en iPhone, dale a <b>Compartir</b> (el cuadrado con la flecha; en Chrome está arriba, junto a la dirección) y elige <b>«Añadir a pantalla de inicio»</b>. En Android, toca los <b>tres puntos</b> y elige <b>«Añadir a pantalla de inicio»</b>.</p>
+    <h3 style="font-family:var(--f-tit);font-weight:500;color:var(--verde);margin:22px 0 10px">Cómo ponerla <i style="color:var(--oro-texto)">en tu móvil</i></h3>
+    <div class="pd-paso"><b>iPhone</b> <span>con Safari</span><p>Toca <b>Compartir</b> (el cuadrado con la flecha, abajo) → <b>«Añadir a pantalla de inicio»</b> → <b>Añadir</b>.</p></div>
+    <div class="pd-paso"><b>iPhone</b> <span>con Chrome</span><p>Toca <b>Compartir</b> <b>arriba, junto a la dirección</b> → <b>«Añadir a pantalla de inicio»</b>.</p></div>
+    <div class="pd-paso"><b>Android</b> <span>con Chrome</span><p>Toca los <b>tres puntos</b> arriba a la derecha → <b>«Añadir a pantalla de inicio»</b> o <b>«Instalar aplicación»</b>.</p></div>
+    <p class="gris" style="margin-top:6px">Listo: ábrela siempre desde el icono <b>PD</b>, como una app más.</p>
     <p class="gris">Tus papeles se guardan cifrados: solo tú puedes verlos.</p>
     <button class="btn oro" id="pd-bv-subir">Subir mis papeles ahora</button>
     <p class="gris" style="text-align:center;margin-top:18px">Un abrazo, Mapi · Finanzas Partida Doble</p>
