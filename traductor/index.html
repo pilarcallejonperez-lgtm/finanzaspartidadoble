@@ -114,24 +114,53 @@ const DICC = [
   [/\bsr\.?\s+(?=\p{Lu})/gu, 'Sor '],
 ];
 function prepararMg(s){ let x = limpiar(s); for (const [re, es] of DICC) x = x.replace(re, es); return x; }
+// Traductor con Claude (Cloudflare Worker). Si falla, se usa Google como reserva.
+const WORKER_URL = 'PENDIENTE';
+async function conClaude(s){
+  if (!/^https:/.test(WORKER_URL)) throw new Error('sin worker');
+  const r = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texto: s, sentido: modo === 'es' ? 'mg-es' : 'es-mg' }) });
+  const j = await r.json(); if (!r.ok || !j.traduccion) throw new Error(j.error || r.status);
+  return j.traduccion;
+}
 async function traducir(){
   let s = $('texto').value.trim(); if (!s) { $('texto').focus(); return; }
+  $('traducir').disabled = true; $('traducir').textContent = 'Traduciendo…';
+  $('resultado').hidden = false; $('salida').className = ''; $('salida').textContent = '…';
+  $('titulo').textContent = modo === 'es' ? 'En español' : 'En malgache';
+  try { $('salida').textContent = await conClaude(s); $('copiar').hidden = false;
+        $('traducir').disabled = false; $('traducir').textContent = 'Traducir'; return; }
+  catch (e) { /* reserva: Google */ }
   s = modo === 'es' ? prepararMg(s) : limpiar(s);
   const [sl, tl] = modo === 'es' ? ['mg', 'es'] : ['es', 'mg'];
   $('traducir').disabled = true; $('traducir').textContent = 'Traduciendo…';
   $('resultado').hidden = false; $('salida').className = ''; $('salida').textContent = '…';
   $('titulo').textContent = modo === 'es' ? 'En español' : 'En malgache';
-  try {
-    const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sl + '&tl=' + tl + '&dt=t&q=' + encodeURIComponent(s);
-    const r = await fetch(u); if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    $('salida').textContent = pulir(j[0].map(x => x[0]).join(''));
-    $('copiar').hidden = false;
-  } catch (e) {
-    $('salida').className = 'error';
-    $('salida').textContent = 'No se ha podido traducir. Mira que tengas internet y vuelve a tocar «Traducir».';
-    $('copiar').hidden = true;
-  } finally { $('traducir').disabled = false; $('traducir').textContent = 'Traducir'; }
+  const q = encodeURIComponent(s);
+  // Tres caminos: si uno falla en este móvil, entra el siguiente
+  const caminos = [
+    async () => { const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sl + '&tl=' + tl + '&dt=t&q=' + q);
+                  if (!r.ok) throw new Error('g1 ' + r.status); const j = await r.json(); return j[0].map(x => x[0]).join(''); },
+    async () => { const r = await fetch('https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=' + sl + '&tl=' + tl + '&q=' + q);
+                  if (!r.ok) throw new Error('g2 ' + r.status); const j = await r.json();
+                  const v = Array.isArray(j) ? j.map(x => Array.isArray(x) ? x[0] : x).join(' ') : ''; if (!v) throw new Error('g2 vacío'); return v; },
+    async () => { const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(s.slice(0, 490)) + '&langpair=' + sl + '|' + tl);
+                  if (!r.ok) throw new Error('m ' + r.status); const j = await r.json(); const v = j.responseData && j.responseData.translatedText;
+                  if (!v) throw new Error('m vacío'); return v; },
+  ];
+  const fallos = [];
+  for (const camino of caminos) {
+    try {
+      $('salida').textContent = pulir(await camino());
+      $('copiar').hidden = false;
+      $('traducir').disabled = false; $('traducir').textContent = 'Traducir';
+      return;
+    } catch (e) { fallos.push(String(e && e.message || e)); }
+  }
+  $('salida').className = 'error';
+  $('salida').textContent = 'No se ha podido traducir. Mira que tengas internet y vuelve a tocar «Traducir». (' + fallos.join(' · ') + ')';
+  $('copiar').hidden = true;
+  $('traducir').disabled = false; $('traducir').textContent = 'Traducir';
 }
 $('traducir').onclick = traducir;
 $('copiar').onclick = async () => {
