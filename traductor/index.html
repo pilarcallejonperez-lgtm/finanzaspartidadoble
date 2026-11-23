@@ -90,8 +90,33 @@ $('pegar').onclick = async () => {
   try { $('texto').value = await navigator.clipboard.readText(); traducir(); }
   catch (e) { $('texto').focus(); }
 };
+// 1) Limpiar: espacio tras . ! ? , ; y quitar «?» pegado al principio de una palabra («?ato» → «Ato»)
+function limpiar(s){
+  return s.replace(/\s+\?(\p{L})/gu, (m, b) => '? ' + b.toUpperCase())
+          .replace(/([.!?;,])(?=\p{L})/gu, '$1 ')
+          .replace(/\s+([.,;!?])/g, '$1')
+          .replace(/(\p{Ll})\s+i\s+(?=\p{Lu})/gu, '$1, i ')   // «… manahy i Hérisson» → «… manahy, i Hérisson»
+          .replace(/([.!?]\s+)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase())
+          .replace(/[ \t]+/g, ' ').trim();
+}
+// Mayúscula al empezar cada frase de la traducción y en «Sor»
+function pulir(s){
+  return s.replace(/(^|[.!?]\s+)(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase())
+          .replace(/\bsor (\p{Ll})/gu, (m, b) => 'Sor ' + b.toUpperCase());
+}
+// 2) Frases de familia que Google traduce mal (malgache → español). Se amplía con lo que vaya saliendo.
+const DICC = [
+  [/\bsalama\s+(aby|daholo)\b!?/giu, '¡Hola a todos!'],
+  [/\bsalama\s+tompoko\b!?/giu, '¡Hola!'],
+  [/\bvaovao\s+any\s*\?/giu, '¿Qué tal por ahí?'],
+  [/\bmirarisoa\s+sy\s+/giu, '¡Ánimo! '],
+  [/\b(mirarisoa|mahereza)\b!?/giu, '¡Ánimo!'],
+  [/\bsr\.?\s+(?=\p{Lu})/gu, 'Sor '],
+];
+function prepararMg(s){ let x = limpiar(s); for (const [re, es] of DICC) x = x.replace(re, es); return x; }
 async function traducir(){
-  const s = $('texto').value.trim(); if (!s) { $('texto').focus(); return; }
+  let s = $('texto').value.trim(); if (!s) { $('texto').focus(); return; }
+  s = modo === 'es' ? prepararMg(s) : limpiar(s);
   const [sl, tl] = modo === 'es' ? ['mg', 'es'] : ['es', 'mg'];
   $('traducir').disabled = true; $('traducir').textContent = 'Traduciendo…';
   $('resultado').hidden = false; $('salida').className = ''; $('salida').textContent = '…';
@@ -100,7 +125,7 @@ async function traducir(){
     const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sl + '&tl=' + tl + '&dt=t&q=' + encodeURIComponent(s);
     const r = await fetch(u); if (!r.ok) throw new Error(r.status);
     const j = await r.json();
-    $('salida').textContent = j[0].map(x => x[0]).join('');
+    $('salida').textContent = pulir(j[0].map(x => x[0]).join(''));
     $('copiar').hidden = false;
   } catch (e) {
     $('salida').className = 'error';
